@@ -1,12 +1,12 @@
 [package]
-name = "claude-agent-sdk"
-version = "0.1.2"
+name = "claude-agent-sdk-rs"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
 authors = ["Jimmy Stridh"]
 description = "Rust SDK for building agents with Claude Code CLI"
 license = "MIT"
-repository = "https://github.com/jimmystridh/claude-agent-sdk-rust"
+repository = "https://github.com/jimmystridh/claude-agent-sdk-rs"
 keywords = ["claude", "ai", "agents", "anthropic", "sdk"]
 categories = ["api-bindings", "asynchronous"]
 readme = "README.md"
