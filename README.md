@@ -2,7 +2,7 @@
 
 A Rust SDK for building agents that interact with the Claude Code CLI.
 
-This is an official Rust port of the [Python Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk), providing the same functionality with idiomatic Rust APIs.
+Inspired by the [Python Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk), providing similar functionality with idiomatic Rust APIs.
 
 ## Features
 
