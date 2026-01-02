@@ -5,10 +5,7 @@
 //!
 //! Run with: cargo run --example with_tools
 
-use claude_agents_sdk::{
-    ClaudeClientBuilder,
-    Message, PermissionResult, PermissionMode,
-};
+use claude_agents_sdk::{ClaudeClientBuilder, Message, PermissionMode, PermissionResult};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -25,7 +22,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .can_use_tool(|tool_name, input, _context| async move {
             println!("\n📋 Tool permission requested:");
             println!("   Tool: {}", tool_name);
-            println!("   Input: {}", serde_json::to_string_pretty(&input).unwrap_or_default());
+            println!(
+                "   Input: {}",
+                serde_json::to_string_pretty(&input).unwrap_or_default()
+            );
 
             // Example: Allow Read tool, deny Bash for dangerous commands
             match tool_name.as_str() {
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if cmd.contains("rm ") || cmd.contains("sudo") {
                             println!("   ❌ Denying dangerous Bash command");
                             return PermissionResult::deny_with_message(
-                                "Dangerous commands are not allowed"
+                                "Dangerous commands are not allowed",
                             );
                         }
                     }
@@ -60,7 +60,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Send a query that will likely use tools
     println!("--- Sending query that may trigger tool use ---\n");
-    client.query("List the files in the current directory using ls.").await?;
+    client
+        .query("List the files in the current directory using ls.")
+        .await?;
 
     // Process the response
     while let Some(msg) = client.receive_messages().next().await {

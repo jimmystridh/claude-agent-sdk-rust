@@ -6,8 +6,8 @@
 //! Run with: cargo run --example tool_permission_callback
 
 use claude_agents_sdk::{
-    ClaudeClient, ClaudeAgentOptions, ContentBlock, Message, PermissionResult,
-    PermissionResultAllow, PermissionUpdate, CanUseTool,
+    CanUseTool, ClaudeAgentOptions, ClaudeClient, ContentBlock, Message, PermissionResult,
+    PermissionResultAllow, PermissionUpdate,
 };
 use std::sync::{Arc, Mutex};
 use tokio_stream::StreamExt;
@@ -53,11 +53,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             println!("\n🔧 Tool Permission Request: {}", tool_name);
-            println!("   Input: {}", serde_json::to_string_pretty(&input_data).unwrap_or_default());
+            println!(
+                "   Input: {}",
+                serde_json::to_string_pretty(&input_data).unwrap_or_default()
+            );
 
             // Always allow read operations
             if matches!(tool_name.as_str(), "Read" | "Glob" | "Grep") {
-                println!("   ✅ Automatically allowing {} (read-only operation)", tool_name);
+                println!(
+                    "   ✅ Automatically allowing {} (read-only operation)",
+                    tool_name
+                );
                 return PermissionResult::allow();
             }
 
@@ -91,7 +97,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(obj) = modified_input.as_object_mut() {
                         obj.insert("file_path".to_string(), serde_json::json!(safe_path));
                     }
-                    return PermissionResult::Allow(PermissionResultAllow::with_updated_input(modified_input));
+                    return PermissionResult::Allow(PermissionResultAllow::with_updated_input(
+                        modified_input,
+                    ));
                 }
             }
 

@@ -55,14 +55,12 @@ fn test_parse_user_message_with_content_blocks() {
 
     let msg = parse_message(raw).unwrap();
     match msg {
-        Message::User(user) => {
-            match &user.content {
-                UserMessageContent::Blocks(blocks) => {
-                    assert_eq!(blocks.len(), 2);
-                }
-                _ => panic!("Expected blocks"),
+        Message::User(user) => match &user.content {
+            UserMessageContent::Blocks(blocks) => {
+                assert_eq!(blocks.len(), 2);
             }
-        }
+            _ => panic!("Expected blocks"),
+        },
         _ => panic!("Expected user message"),
     }
 }
@@ -220,7 +218,10 @@ fn test_parse_result_message() {
             assert_eq!(result.session_id, "sess_abc123");
             assert_eq!(result.total_cost_usd, Some(0.0123));
             assert!(result.usage.is_some());
-            assert_eq!(result.result, Some("Task completed successfully".to_string()));
+            assert_eq!(
+                result.result,
+                Some("Task completed successfully".to_string())
+            );
         }
         _ => panic!("Expected result message"),
     }
@@ -296,15 +297,13 @@ fn test_parse_tool_result_block() {
 
     let msg = parse_message(raw).unwrap();
     match msg {
-        Message::Assistant(asst) => {
-            match &asst.content[0] {
-                ContentBlock::ToolResult(result) => {
-                    assert_eq!(result.tool_use_id, "toolu_123");
-                    assert_eq!(result.is_error, Some(false));
-                }
-                _ => panic!("Expected tool result block"),
+        Message::Assistant(asst) => match &asst.content[0] {
+            ContentBlock::ToolResult(result) => {
+                assert_eq!(result.tool_use_id, "toolu_123");
+                assert_eq!(result.is_error, Some(false));
             }
-        }
+            _ => panic!("Expected tool result block"),
+        },
         _ => panic!("Expected assistant message"),
     }
 }
@@ -381,7 +380,9 @@ fn test_parse_control_request_can_use_tool() {
     let request = parse_control_request(raw).unwrap();
     assert_eq!(request.request_id, "req_001");
     match request.request {
-        ControlRequestPayload::CanUseTool { tool_name, input, .. } => {
+        ControlRequestPayload::CanUseTool {
+            tool_name, input, ..
+        } => {
             assert_eq!(tool_name, "Bash");
             assert_eq!(input["command"], "rm -rf /");
         }

@@ -7,7 +7,7 @@
 //!
 //! Run with: cargo run --example filesystem_agents
 
-use claude_agents_sdk::{ClaudeClient, ClaudeAgentOptions, ContentBlock, Message, SettingSource};
+use claude_agents_sdk::{ClaudeAgentOptions, ClaudeClient, ContentBlock, Message, SettingSource};
 use std::env;
 use tokio_stream::StreamExt;
 
@@ -22,7 +22,9 @@ fn extract_agents(msg: &claude_agents_sdk::SystemMessage) -> Vec<String> {
                         if let Some(s) = a.as_str() {
                             Some(s.to_string())
                         } else if let Some(obj) = a.as_object() {
-                            obj.get("name").and_then(|n| n.as_str()).map(|s| s.to_string())
+                            obj.get("name")
+                                .and_then(|n| n.as_str())
+                                .map(|s| s.to_string())
                         } else {
                             None
                         }

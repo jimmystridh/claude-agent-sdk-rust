@@ -99,9 +99,7 @@ async fn with_tight_budget() -> Result<(), Box<dyn std::error::Error>> {
                 // Check if budget was exceeded
                 if result.subtype == "error_max_budget_usd" {
                     println!("⚠️  Budget limit exceeded!");
-                    println!(
-                        "Note: The cost may exceed the budget by up to one API call's worth"
-                    );
+                    println!("Note: The cost may exceed the budget by up to one API call's worth");
                 }
             }
             _ => {}

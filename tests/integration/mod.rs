@@ -9,10 +9,10 @@
 //! 3. Take significant time to run
 
 pub mod helpers;
-pub mod test_core;
-pub mod test_system_prompt;
 pub mod test_client;
-pub mod test_tools;
-pub mod test_results;
-pub mod test_edge_cases;
 pub mod test_context;
+pub mod test_core;
+pub mod test_edge_cases;
+pub mod test_results;
+pub mod test_system_prompt;
+pub mod test_tools;

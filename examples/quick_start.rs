@@ -38,12 +38,7 @@ async fn with_options_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_system_prompt("You are a helpful assistant that explains things simply.")
         .with_max_turns(1);
 
-    let mut stream = query(
-        "Explain what Rust is in one sentence.",
-        Some(options),
-        None,
-    )
-    .await?;
+    let mut stream = query("Explain what Rust is in one sentence.", Some(options), None).await?;
 
     while let Some(message) = stream.next().await {
         if let Message::Assistant(msg) = message? {

@@ -14,14 +14,15 @@
 //!
 //! Run with: cargo run --example setting_sources [example_name]
 
-use claude_agents_sdk::{ClaudeClient, ClaudeAgentOptions, Message, SettingSource};
+use claude_agents_sdk::{ClaudeAgentOptions, ClaudeClient, Message, SettingSource};
 use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use tokio_stream::StreamExt;
 
 /// Type alias for async example functions.
-type ExampleFn = fn() -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error>>> + Send>>;
+type ExampleFn =
+    fn() -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error>>> + Send>>;
 
 /// Extract slash command names from system message.
 fn extract_slash_commands(msg: &claude_agents_sdk::SystemMessage) -> Vec<String> {

@@ -224,7 +224,10 @@ impl ClaudeSDKError {
     }
 
     /// Create a control protocol error with request ID.
-    pub fn control_protocol_with_id(message: impl Into<String>, request_id: impl Into<String>) -> Self {
+    pub fn control_protocol_with_id(
+        message: impl Into<String>,
+        request_id: impl Into<String>,
+    ) -> Self {
         Self::ControlProtocol {
             message: message.into(),
             request_id: Some(request_id.into()),

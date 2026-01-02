@@ -1,8 +1,8 @@
 //! Tests for Claude SDK client functionality.
 
 use claude_agents_sdk::{
-    AssistantMessage, ClaudeAgentOptions, ContentBlock, Message, PermissionMode, SystemPromptConfig,
-    TextBlock, ToolsConfig,
+    AssistantMessage, ClaudeAgentOptions, ContentBlock, Message, PermissionMode,
+    SystemPromptConfig, TextBlock, ToolsConfig,
 };
 use std::path::PathBuf;
 

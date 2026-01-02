@@ -117,7 +117,11 @@ impl ToolInputSchema {
     }
 
     /// Add a string property.
-    pub fn string_property(mut self, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn string_property(
+        mut self,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         self.properties.insert(
             name.into(),
             serde_json::json!({
@@ -129,7 +133,11 @@ impl ToolInputSchema {
     }
 
     /// Add a number property.
-    pub fn number_property(mut self, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn number_property(
+        mut self,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         self.properties.insert(
             name.into(),
             serde_json::json!({
@@ -141,7 +149,11 @@ impl ToolInputSchema {
     }
 
     /// Add a boolean property.
-    pub fn boolean_property(mut self, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn boolean_property(
+        mut self,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         self.properties.insert(
             name.into(),
             serde_json::json!({
@@ -160,9 +172,8 @@ impl ToolInputSchema {
 }
 
 /// Type alias for tool handler functions.
-pub type ToolHandler = Arc<
-    dyn Fn(Value) -> Pin<Box<dyn Future<Output = ToolResult> + Send>> + Send + Sync,
->;
+pub type ToolHandler =
+    Arc<dyn Fn(Value) -> Pin<Box<dyn Future<Output = ToolResult> + Send>> + Send + Sync>;
 
 /// SDK MCP tool definition.
 ///
@@ -357,12 +368,9 @@ mod tests {
 
     #[test]
     fn test_create_sdk_server() {
-        let tool = SdkMcpTool::new(
-            "test",
-            "Test tool",
-            ToolInputSchema::object(),
-            |_| async { ToolResult::text("ok") },
-        );
+        let tool = SdkMcpTool::new("test", "Test tool", ToolInputSchema::object(), |_| async {
+            ToolResult::text("ok")
+        });
 
         let (config, tools) = create_sdk_mcp_server("test-server", "1.0.0", vec![tool]);
 

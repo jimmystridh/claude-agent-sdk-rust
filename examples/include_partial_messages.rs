@@ -9,7 +9,7 @@
 //!
 //! Run with: cargo run --example include_partial_messages
 
-use claude_agents_sdk::{ClaudeClient, ClaudeAgentOptions, Message, UserMessageContent};
+use claude_agents_sdk::{ClaudeAgentOptions, ClaudeClient, Message, UserMessageContent};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -47,21 +47,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("  Block: {:?}", block);
                 }
             }
-            Message::User(user) => {
-                match &user.content {
-                    UserMessageContent::Text(text) => {
-                        println!("UserMessage (text): {:?}", text);
-                    }
-                    UserMessageContent::Blocks(blocks) => {
-                        println!("UserMessage: {} blocks", blocks.len());
-                    }
+            Message::User(user) => match &user.content {
+                UserMessageContent::Text(text) => {
+                    println!("UserMessage (text): {:?}", text);
                 }
-            }
+                UserMessageContent::Blocks(blocks) => {
+                    println!("UserMessage: {} blocks", blocks.len());
+                }
+            },
             Message::System(sys) => {
                 println!("SystemMessage: subtype={:?}", sys.subtype);
             }
             Message::Result(result) => {
-                println!("ResultMessage: subtype={:?}, cost={:?}", result.subtype, result.total_cost_usd);
+                println!(
+                    "ResultMessage: subtype={:?}, cost={:?}",
+                    result.subtype, result.total_cost_usd
+                );
                 break;
             }
         }

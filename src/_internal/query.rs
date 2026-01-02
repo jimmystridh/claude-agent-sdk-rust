@@ -447,10 +447,11 @@ impl Query {
         // Build hooks configuration for initialization
         let hooks_config = self.build_hooks_config().await;
 
-        let result = self.send_control_request(ControlRequestPayload::Initialize {
-            hooks: hooks_config,
-        })
-        .await?;
+        let result = self
+            .send_control_request(ControlRequestPayload::Initialize {
+                hooks: hooks_config,
+            })
+            .await?;
 
         // Store the initialization result for later retrieval
         {
@@ -492,7 +493,8 @@ impl Query {
                 // Register callbacks
                 let mut callback_ids = Vec::new();
                 for (i, callback) in matcher.hooks.iter().enumerate() {
-                    let callback_id = format!("{}_{}", serde_json::to_string(event).unwrap_or_default(), i);
+                    let callback_id =
+                        format!("{}_{}", serde_json::to_string(event).unwrap_or_default(), i);
                     callback_ids.push(callback_id.clone());
 
                     let mut callbacks = self.hook_callbacks.write().await;
@@ -500,7 +502,8 @@ impl Query {
                 }
 
                 if !callback_ids.is_empty() {
-                    matcher_config.insert("callbackIds".to_string(), serde_json::json!(callback_ids));
+                    matcher_config
+                        .insert("callbackIds".to_string(), serde_json::json!(callback_ids));
                 }
 
                 event_config.push(serde_json::Value::Object(matcher_config));
@@ -515,7 +518,10 @@ impl Query {
                 HookEvent::PreCompact => "PreCompact",
             };
 
-            config.insert(event_name.to_string(), serde_json::Value::Array(event_config));
+            config.insert(
+                event_name.to_string(),
+                serde_json::Value::Array(event_config),
+            );
         }
 
         Some(serde_json::Value::Object(config))

@@ -15,8 +15,8 @@
 //! - PreCompact: Before context compaction
 
 use claude_agents_sdk::{
-    ClaudeClient, ClaudeAgentOptions, ContentBlock, HookCallback, HookEvent,
-    HookInput, HookMatcher, HookOutput, Message, SyncHookOutput,
+    ClaudeAgentOptions, ClaudeClient, ContentBlock, HookCallback, HookEvent, HookInput,
+    HookMatcher, HookOutput, Message, SyncHookOutput,
 };
 use std::collections::HashMap;
 use std::env;
@@ -81,11 +81,17 @@ fn security_hook() -> HookCallback {
                         let dangerous_patterns = ["rm -rf", "sudo", "chmod 777"];
                         for pattern in dangerous_patterns {
                             if command.contains(pattern) {
-                                println!("⚠️  Security hook: Blocking dangerous command: {}", command);
+                                println!(
+                                    "⚠️  Security hook: Blocking dangerous command: {}",
+                                    command
+                                );
                                 return HookOutput::Sync(SyncHookOutput {
                                     continue_: Some(false),
                                     decision: Some("block".to_string()),
-                                    reason: Some(format!("Command contains dangerous pattern: {}", pattern)),
+                                    reason: Some(format!(
+                                        "Command contains dangerous pattern: {}",
+                                        pattern
+                                    )),
                                     ..Default::default()
                                 });
                             }
@@ -132,7 +138,9 @@ async fn example_basic_hooks() -> Result<(), Box<dyn std::error::Error>> {
     client.connect().await?;
 
     println!("User: Run echo hello");
-    client.query("Run the bash command: echo 'Hello from hooks!'").await?;
+    client
+        .query("Run the bash command: echo 'Hello from hooks!'")
+        .await?;
 
     let (response, _) = client.receive_response().await?;
     println!("Claude: {}\n", response);

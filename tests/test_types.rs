@@ -168,8 +168,8 @@ fn test_claude_agent_options_builder() {
 
 #[test]
 fn test_claude_agent_options_with_allowed_tools() {
-    let options = ClaudeAgentOptions::new()
-        .with_allowed_tools(vec!["Bash".to_string(), "Read".to_string()]);
+    let options =
+        ClaudeAgentOptions::new().with_allowed_tools(vec!["Bash".to_string(), "Read".to_string()]);
 
     assert_eq!(options.allowed_tools.len(), 2);
     assert!(options.allowed_tools.contains(&"Bash".to_string()));
@@ -285,12 +285,7 @@ fn test_query_chunks_concept() {
 #[test]
 fn test_query_chunks_with_code_blocks() {
     // Useful for building prompts with code blocks
-    let chunks = vec![
-        "Analyze this:\n",
-        "```rust\n",
-        "fn main() {}\n",
-        "```",
-    ];
+    let chunks = vec!["Analyze this:\n", "```rust\n", "fn main() {}\n", "```"];
     let prompt: String = chunks.into_iter().collect();
     assert!(prompt.contains("```rust"));
     assert!(prompt.contains("fn main()"));
@@ -330,8 +325,8 @@ fn test_options_with_stderr_callback() {
 #[test]
 fn test_options_with_allowed_tools() {
     // Test setting allowed tools
-    let options = ClaudeAgentOptions::new()
-        .with_allowed_tools(vec!["Read".to_string(), "Write".to_string()]);
+    let options =
+        ClaudeAgentOptions::new().with_allowed_tools(vec!["Read".to_string(), "Write".to_string()]);
 
     assert_eq!(options.allowed_tools.len(), 2);
     assert!(options.allowed_tools.contains(&"Read".to_string()));
@@ -342,8 +337,7 @@ fn test_options_with_cwd() {
     use std::path::PathBuf;
 
     // Test setting working directory
-    let options = ClaudeAgentOptions::new()
-        .with_cwd("/tmp/test");
+    let options = ClaudeAgentOptions::new().with_cwd("/tmp/test");
 
     assert_eq!(options.cwd, Some(PathBuf::from("/tmp/test")));
 }

@@ -11,15 +11,9 @@ use crate::types::*;
 /// This function handles the discriminated union parsing for all message types,
 /// including nested content blocks.
 pub fn parse_message(raw: serde_json::Value) -> Result<Message> {
-    let msg_type = raw
-        .get("type")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            ClaudeSDKError::message_parse_with_raw(
-                "Message missing 'type' field",
-                raw.clone(),
-            )
-        })?;
+    let msg_type = raw.get("type").and_then(|v| v.as_str()).ok_or_else(|| {
+        ClaudeSDKError::message_parse_with_raw("Message missing 'type' field", raw.clone())
+    })?;
 
     match msg_type {
         "user" => parse_user_message(raw),
@@ -38,10 +32,7 @@ pub fn parse_message(raw: serde_json::Value) -> Result<Message> {
 fn parse_user_message(raw: serde_json::Value) -> Result<Message> {
     // CLI sends user messages with content nested under "message" field
     let message_obj = raw.get("message").ok_or_else(|| {
-        ClaudeSDKError::message_parse_with_raw(
-            "User message missing 'message' field",
-            raw.clone(),
-        )
+        ClaudeSDKError::message_parse_with_raw("User message missing 'message' field", raw.clone())
     })?;
 
     let content = message_obj.get("content").ok_or_else(|| {
@@ -102,16 +93,17 @@ fn parse_assistant_message(raw: serde_json::Value) -> Result<Message> {
         .unwrap_or("unknown")
         .to_string();
 
-    let error = message_obj.get("error").and_then(|v| v.as_str()).map(|s| {
-        match s {
+    let error = message_obj
+        .get("error")
+        .and_then(|v| v.as_str())
+        .map(|s| match s {
             "authentication_failed" => AssistantMessageError::AuthenticationFailed,
             "billing_error" => AssistantMessageError::BillingError,
             "rate_limit" => AssistantMessageError::RateLimit,
             "invalid_request" => AssistantMessageError::InvalidRequest,
             "server_error" => AssistantMessageError::ServerError,
             _ => AssistantMessageError::Unknown,
-        }
-    });
+        });
 
     Ok(Message::Assistant(AssistantMessage {
         content,
@@ -183,7 +175,10 @@ fn parse_result_message(raw: serde_json::Value) -> Result<Message> {
 
     let usage = raw.get("usage").cloned();
     let result = raw.get("result").and_then(|v| v.as_str()).map(String::from);
-    let structured_output = raw.get("structured_output").or_else(|| raw.get("structuredOutput")).cloned();
+    let structured_output = raw
+        .get("structured_output")
+        .or_else(|| raw.get("structuredOutput"))
+        .cloned();
 
     Ok(Message::Result(ResultMessage {
         subtype,
@@ -236,15 +231,9 @@ fn parse_content_blocks(blocks: &[serde_json::Value]) -> Result<Vec<ContentBlock
 
 /// Parse a single content block.
 fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
-    let block_type = raw
-        .get("type")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            ClaudeSDKError::message_parse_with_raw(
-                "Content block missing 'type' field",
-                raw.clone(),
-            )
-        })?;
+    let block_type = raw.get("type").and_then(|v| v.as_str()).ok_or_else(|| {
+        ClaudeSDKError::message_parse_with_raw("Content block missing 'type' field", raw.clone())
+    })?;
 
     match block_type {
         "text" => {
@@ -266,7 +255,10 @@ fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string();
-            Ok(ContentBlock::Thinking(ThinkingBlock { thinking, signature }))
+            Ok(ContentBlock::Thinking(ThinkingBlock {
+                thinking,
+                signature,
+            }))
         }
         "tool_use" => {
             let id = raw

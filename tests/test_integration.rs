@@ -81,10 +81,7 @@ fn test_query_with_tool_use() {
     let tool_uses = assistant.tool_uses();
     assert_eq!(tool_uses.len(), 1);
     assert_eq!(tool_uses[0].name, "Read");
-    assert_eq!(
-        tool_uses[0].input["file_path"].as_str(),
-        Some("/test.txt")
-    );
+    assert_eq!(tool_uses[0].input["file_path"].as_str(), Some("/test.txt"));
 }
 
 #[test]
@@ -181,10 +178,8 @@ fn test_result_json_parsing() {
 
 #[test]
 fn test_options_with_allowed_tools() {
-    let options = ClaudeAgentOptions::new().with_allowed_tools(vec![
-        "Read".to_string(),
-        "Write".to_string(),
-    ]);
+    let options =
+        ClaudeAgentOptions::new().with_allowed_tools(vec!["Read".to_string(), "Write".to_string()]);
 
     assert_eq!(options.allowed_tools, vec!["Read", "Write"]);
 }
@@ -193,10 +188,7 @@ fn test_options_with_allowed_tools() {
 fn test_options_with_cwd() {
     let options = ClaudeAgentOptions::new().with_cwd("/custom/path");
 
-    assert_eq!(
-        options.cwd,
-        Some(std::path::PathBuf::from("/custom/path"))
-    );
+    assert_eq!(options.cwd, Some(std::path::PathBuf::from("/custom/path")));
 }
 
 #[test]

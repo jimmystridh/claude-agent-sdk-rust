@@ -203,7 +203,10 @@ fn test_options_with_env_vars() {
     options.env = env;
 
     assert_eq!(options.env.len(), 2);
-    assert_eq!(options.env.get("MY_TEST_VAR"), Some(&"test-value".to_string()));
+    assert_eq!(
+        options.env.get("MY_TEST_VAR"),
+        Some(&"test-value".to_string())
+    );
 }
 
 #[test]

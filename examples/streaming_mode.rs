@@ -15,32 +15,33 @@
 //! - control_protocol
 //! - error_handling
 
-use claude_agents_sdk::{ClaudeClient, ClaudeAgentOptions, ContentBlock, Message, UserMessageContent};
+use claude_agents_sdk::{
+    ClaudeAgentOptions, ClaudeClient, ContentBlock, Message, UserMessageContent,
+};
 use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use tokio_stream::StreamExt;
 
 /// Type alias for async example functions.
-type ExampleFn = fn() -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error>>> + Send>>;
+type ExampleFn =
+    fn() -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error>>> + Send>>;
 
 /// Display a message in a standardized format.
 fn display_message(msg: &Message) {
     match msg {
-        Message::User(user) => {
-            match &user.content {
-                UserMessageContent::Text(text) => {
-                    println!("User: {}", text);
-                }
-                UserMessageContent::Blocks(blocks) => {
-                    for block in blocks {
-                        if let ContentBlock::Text(text) = block {
-                            println!("User: {}", text.text);
-                        }
+        Message::User(user) => match &user.content {
+            UserMessageContent::Text(text) => {
+                println!("User: {}", text);
+            }
+            UserMessageContent::Blocks(blocks) => {
+                for block in blocks {
+                    if let ContentBlock::Text(text) = block {
+                        println!("User: {}", text.text);
                     }
                 }
             }
-        }
+        },
         Message::Assistant(asst) => {
             for block in &asst.content {
                 if let ContentBlock::Text(text) = block {
@@ -151,7 +152,9 @@ async fn example_with_interrupt() -> Result<(), Box<dyn std::error::Error>> {
 
     // Send new instruction after interrupt
     println!("\nUser: Never mind, just tell me a quick joke");
-    client.query("Never mind, just tell me a quick joke").await?;
+    client
+        .query("Never mind, just tell me a quick joke")
+        .await?;
 
     let (response, _) = client.receive_response().await?;
     println!("Claude: {}", response);
@@ -213,8 +216,7 @@ async fn example_with_options() -> Result<(), Box<dyn std::error::Error>> {
 async fn example_bash_command() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Bash Command Example ===");
 
-    let options = ClaudeAgentOptions::new()
-        .with_allowed_tools(vec!["Bash".to_string()]);
+    let options = ClaudeAgentOptions::new().with_allowed_tools(vec!["Bash".to_string()]);
 
     let mut client = ClaudeClient::new(Some(options), None);
     client.connect().await?;
@@ -231,38 +233,39 @@ async fn example_bash_command() -> Result<(), Box<dyn std::error::Error>> {
         message_types.push(format!("{:?}", std::mem::discriminant(&msg)));
 
         match &msg {
-            Message::User(user) => {
-                match &user.content {
-                    UserMessageContent::Text(text) => {
-                        println!("User: {}", text);
-                    }
-                    UserMessageContent::Blocks(blocks) => {
-                        for block in blocks {
-                            match block {
-                                ContentBlock::Text(text) => {
-                                    println!("User: {}", text.text);
-                                }
-                                ContentBlock::ToolResult(result) => {
-                                    let content_preview = result
-                                        .content
-                                        .as_ref()
-                                        .map(|c| {
-                                            let s = c.to_string();
-                                            if s.len() > 100 {
-                                                format!("{}...", &s[..100])
-                                            } else {
-                                                s
-                                            }
-                                        })
-                                        .unwrap_or_else(|| "None".to_string());
-                                    println!("Tool Result (id: {}): {}", result.tool_use_id, content_preview);
-                                }
-                                _ => {}
+            Message::User(user) => match &user.content {
+                UserMessageContent::Text(text) => {
+                    println!("User: {}", text);
+                }
+                UserMessageContent::Blocks(blocks) => {
+                    for block in blocks {
+                        match block {
+                            ContentBlock::Text(text) => {
+                                println!("User: {}", text.text);
                             }
+                            ContentBlock::ToolResult(result) => {
+                                let content_preview = result
+                                    .content
+                                    .as_ref()
+                                    .map(|c| {
+                                        let s = c.to_string();
+                                        if s.len() > 100 {
+                                            format!("{}...", &s[..100])
+                                        } else {
+                                            s
+                                        }
+                                    })
+                                    .unwrap_or_else(|| "None".to_string());
+                                println!(
+                                    "Tool Result (id: {}): {}",
+                                    result.tool_use_id, content_preview
+                                );
+                            }
+                            _ => {}
                         }
                     }
                 }
-            }
+            },
             Message::Assistant(asst) => {
                 for block in &asst.content {
                     match block {
@@ -403,36 +406,34 @@ async fn example_error_handling() -> Result<(), Box<dyn std::error::Error>> {
 
             // Try to receive response with a short timeout
             let mut messages_count = 0;
-            let timeout = tokio::time::timeout(
-                std::time::Duration::from_secs(10),
-                async {
-                    while let Some(msg) = client.receive_messages().next().await {
-                        let msg = msg?;
-                        messages_count += 1;
+            let timeout = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                while let Some(msg) = client.receive_messages().next().await {
+                    let msg = msg?;
+                    messages_count += 1;
 
-                        match &msg {
-                            Message::Assistant(asst) => {
-                                for block in &asst.content {
-                                    if let ContentBlock::Text(text) = block {
-                                        let preview = if text.text.len() > 50 {
-                                            format!("{}...", &text.text[..50])
-                                        } else {
-                                            text.text.clone()
-                                        };
-                                        println!("Claude: {}", preview);
-                                    }
+                    match &msg {
+                        Message::Assistant(asst) => {
+                            for block in &asst.content {
+                                if let ContentBlock::Text(text) = block {
+                                    let preview = if text.text.len() > 50 {
+                                        format!("{}...", &text.text[..50])
+                                    } else {
+                                        text.text.clone()
+                                    };
+                                    println!("Claude: {}", preview);
                                 }
                             }
-                            Message::Result(_) => {
-                                display_message(&msg);
-                                return Ok::<_, claude_agents_sdk::ClaudeSDKError>(());
-                            }
-                            _ => {}
                         }
+                        Message::Result(_) => {
+                            display_message(&msg);
+                            return Ok::<_, claude_agents_sdk::ClaudeSDKError>(());
+                        }
+                        _ => {}
                     }
-                    Ok(())
                 }
-            ).await;
+                Ok(())
+            })
+            .await;
 
             match timeout {
                 Ok(Ok(())) => println!("Response completed successfully"),

@@ -20,7 +20,10 @@ async fn test_conversation_context_maintained() {
         .await
         .expect("Failed to send first query");
 
-    let (_, result1) = client.receive_response().await.expect("First response failed");
+    let (_, result1) = client
+        .receive_response()
+        .await
+        .expect("First response failed");
     assert!(!result1.is_error);
 
     // Second turn: recall the fact

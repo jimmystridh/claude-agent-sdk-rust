@@ -3,8 +3,7 @@
 #![cfg(feature = "integration-tests")]
 
 use claude_agents_sdk::{
-    ClaudeAgentOptions, ClaudeClient, ContentBlock, Message, PermissionMode,
-    UserMessageContent,
+    ClaudeAgentOptions, ClaudeClient, ContentBlock, Message, PermissionMode, UserMessageContent,
 };
 use tokio_stream::StreamExt;
 

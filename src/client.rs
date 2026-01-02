@@ -104,10 +104,7 @@ impl ClaudeClient {
     ///     .with_permission_mode(PermissionMode::AcceptEdits);
     /// let client = ClaudeClient::new(Some(options), None);
     /// ```
-    pub fn new(
-        options: Option<ClaudeAgentOptions>,
-        transport: Option<Box<dyn Transport>>,
-    ) -> Self {
+    pub fn new(options: Option<ClaudeAgentOptions>, transport: Option<Box<dyn Transport>>) -> Self {
         Self {
             internal: InternalClient::new(options.unwrap_or_default()),
             message_rx: None,

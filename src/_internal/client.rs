@@ -42,20 +42,9 @@ impl Stream for QueryStream {
     }
 }
 
-// SAFETY: QueryStream is Send because:
-// 1. `query: Query` contains only Send types:
-//    - Arc<Mutex<SubprocessTransport>> is Send (Mutex<T> is Send when T: Send)
-//    - Arc<RwLock<HashMap<...>>> is Send (RwLock<T> is Send when T: Send)
-//    - Option<mpsc::Sender<...>> is Send (tokio mpsc is Send)
-//    - Option<JoinHandle<()>> is Send
-//    - Callback types (CanUseTool, HookCallback) are Send+Sync by definition
-// 2. `receiver: ReceiverStream<Result<Message>>` is Send because:
-//    - ReceiverStream<T> is Send when T: Send
-//    - Result<Message> is Send (Message contains only Send types)
-//
-// The Query struct holds the background task alive but doesn't provide
-// mutable access to non-Send data across threads.
-unsafe impl Send for QueryStream {}
+// QueryStream is automatically Send because all its fields are Send:
+// - Query contains Arc<Mutex<...>>, Arc<RwLock<...>>, etc. which are all Send
+// - ReceiverStream<Result<Message>> is Send when Result<Message> is Send
 
 /// Internal client for processing Claude queries.
 ///
@@ -87,8 +76,7 @@ impl InternalClient {
     /// Validate options before connecting.
     fn validate_options(&self) -> Result<()> {
         // Check for mutually exclusive options
-        if self.options.can_use_tool.is_some()
-            && self.options.permission_prompt_tool_name.is_some()
+        if self.options.can_use_tool.is_some() && self.options.permission_prompt_tool_name.is_some()
         {
             return Err(ClaudeSDKError::configuration(
                 "Cannot specify both 'can_use_tool' and 'permission_prompt_tool_name'",
@@ -149,7 +137,7 @@ impl InternalClient {
             let mut client = InternalClient::new(options);
             client.connect().await?;
             client.send_message(prompt).await?;
-            return Ok(client.into_stream());
+            return client.into_stream();
         }
 
         // Create transport in non-streaming mode
@@ -166,9 +154,10 @@ impl InternalClient {
 
     /// Send a message to the CLI.
     pub async fn send_message(&mut self, message: &str) -> Result<()> {
-        let query = self.query.as_ref().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Client not connected")
-        })?;
+        let query = self
+            .query
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
 
         query.send_message(message).await
     }
@@ -180,36 +169,40 @@ impl InternalClient {
 
     /// Interrupt the current operation.
     pub async fn interrupt(&self) -> Result<()> {
-        let query = self.query.as_ref().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Client not connected")
-        })?;
+        let query = self
+            .query
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
 
         query.interrupt().await
     }
 
     /// Set the permission mode.
     pub async fn set_permission_mode(&self, mode: PermissionMode) -> Result<()> {
-        let query = self.query.as_ref().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Client not connected")
-        })?;
+        let query = self
+            .query
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
 
         query.set_permission_mode(mode).await
     }
 
     /// Set the model.
     pub async fn set_model(&self, model: impl Into<String>) -> Result<()> {
-        let query = self.query.as_ref().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Client not connected")
-        })?;
+        let query = self
+            .query
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
 
         query.set_model(model).await
     }
 
     /// Rewind files to a specific user message.
     pub async fn rewind_files(&self, user_message_id: impl Into<String>) -> Result<()> {
-        let query = self.query.as_ref().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Client not connected")
-        })?;
+        let query = self
+            .query
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
 
         query.rewind_files(user_message_id).await
     }
@@ -247,9 +240,15 @@ impl InternalClient {
     }
 
     /// Convert into a message stream.
-    pub fn into_stream(mut self) -> Pin<Box<dyn Stream<Item = Result<Message>> + Send>> {
-        let rx = self.message_rx.take().expect("Message receiver not available");
-        Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
+    ///
+    /// # Errors
+    /// Returns an error if the message receiver is not available (already taken or never initialized).
+    pub fn into_stream(mut self) -> Result<Pin<Box<dyn Stream<Item = Result<Message>> + Send>>> {
+        let rx = self
+            .message_rx
+            .take()
+            .ok_or_else(|| ClaudeSDKError::internal("Message receiver not available"))?;
+        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
 }
 

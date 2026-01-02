@@ -48,7 +48,10 @@ async fn test_preset_system_prompt() {
 
     assert_message_types(&messages, &["assistant", "result"]);
     let result = get_result(&messages).unwrap();
-    assert!(!result.is_error, "Preset system prompt query should succeed");
+    assert!(
+        !result.is_error,
+        "Preset system prompt query should succeed"
+    );
 }
 
 /// Test system prompt preset with append text.

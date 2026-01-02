@@ -27,11 +27,8 @@ fn test_process_error() {
 
 #[test]
 fn test_process_error_with_stderr() {
-    let err = ClaudeSDKError::process_with_stderr(
-        Some(2),
-        "Command failed",
-        "Error: invalid argument",
-    );
+    let err =
+        ClaudeSDKError::process_with_stderr(Some(2), "Command failed", "Error: invalid argument");
     match &err {
         ClaudeSDKError::Process { stderr, .. } => {
             assert_eq!(stderr.as_deref(), Some("Error: invalid argument"));

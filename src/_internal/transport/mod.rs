@@ -8,8 +8,8 @@ mod subprocess;
 pub use subprocess::SubprocessTransport;
 
 use async_trait::async_trait;
-use tokio_stream::Stream;
 use std::pin::Pin;
+use tokio_stream::Stream;
 
 use crate::errors::Result;
 

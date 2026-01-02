@@ -264,9 +264,8 @@ pub type CanUseToolFuture = Pin<Box<dyn Future<Output = PermissionResult> + Send
 ///     })
 /// });
 /// ```
-pub type CanUseTool = Arc<
-    dyn Fn(String, serde_json::Value, ToolPermissionContext) -> CanUseToolFuture + Send + Sync,
->;
+pub type CanUseTool =
+    Arc<dyn Fn(String, serde_json::Value, ToolPermissionContext) -> CanUseToolFuture + Send + Sync>;
 
 // ============================================================================
 // Hook Types
@@ -551,9 +550,8 @@ pub type HookCallbackFuture = Pin<Box<dyn Future<Output = HookOutput> + Send>>;
 ///     })
 /// });
 /// ```
-pub type HookCallback = Arc<
-    dyn Fn(HookInput, Option<String>, HookContext) -> HookCallbackFuture + Send + Sync,
->;
+pub type HookCallback =
+    Arc<dyn Fn(HookInput, Option<String>, HookContext) -> HookCallbackFuture + Send + Sync>;
 
 /// Hook matcher configuration.
 #[derive(Clone, Default)]
@@ -1195,8 +1193,14 @@ impl std::fmt::Debug for ClaudeAgentOptions {
             .field("max_budget_usd", &self.max_budget_usd)
             .field("disallowed_tools", &self.disallowed_tools)
             .field("model", &self.model)
-            .field("can_use_tool", &self.can_use_tool.as_ref().map(|_| "<callback>"))
-            .field("hooks", &self.hooks.as_ref().map(|h| format!("{} events", h.len())))
+            .field(
+                "can_use_tool",
+                &self.can_use_tool.as_ref().map(|_| "<callback>"),
+            )
+            .field(
+                "hooks",
+                &self.hooks.as_ref().map(|h| format!("{} events", h.len())),
+            )
             .field("stderr", &self.stderr.as_ref().map(|_| "<callback>"))
             .finish_non_exhaustive()
     }

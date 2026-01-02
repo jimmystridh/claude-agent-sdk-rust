@@ -5,7 +5,9 @@
 //!
 //! Run with: cargo run --example agents
 
-use claude_agents_sdk::{query, AgentDefinition, AgentModel, ClaudeAgentOptions, ContentBlock, Message};
+use claude_agents_sdk::{
+    query, AgentDefinition, AgentModel, ClaudeAgentOptions, ContentBlock, Message,
+};
 use std::collections::HashMap;
 use tokio_stream::StreamExt;
 

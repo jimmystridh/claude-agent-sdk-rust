@@ -27,7 +27,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create options with stderr callback and enable debug mode
     let mut options = ClaudeAgentOptions::new();
     options.stderr = Some(stderr_callback);
-    options.extra_args.insert("debug-to-stderr".to_string(), None); // Enable debug output
+    options
+        .extra_args
+        .insert("debug-to-stderr".to_string(), None); // Enable debug output
 
     // Run a query
     println!("Running query with stderr capture...");

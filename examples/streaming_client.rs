@@ -5,7 +5,7 @@
 //!
 //! Run with: cargo run --example streaming_client
 
-use claude_agents_sdk::{ClaudeClient, ClaudeAgentOptions, Message, PermissionMode};
+use claude_agents_sdk::{ClaudeAgentOptions, ClaudeClient, Message, PermissionMode};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -36,7 +36,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Second query (continuation)
     println!("--- Query 2: Follow-up ---");
-    client.query("What is that number multiplied by 10?").await?;
+    client
+        .query("What is that number multiplied by 10?")
+        .await?;
 
     let (response, result) = client.receive_response().await?;
     println!("Response: {}", response.trim());
@@ -44,7 +46,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Third query with streaming output
     println!("--- Query 3: Streaming response ---");
-    client.query("Count from 1 to 5, one number per line.").await?;
+    client
+        .query("Count from 1 to 5, one number per line.")
+        .await?;
 
     print!("Response: ");
     while let Some(msg) = client.receive_messages().next().await {

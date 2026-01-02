@@ -16,9 +16,12 @@ use crate::integration::helpers::*;
 /// - Stream closes properly after completion
 #[tokio::test]
 async fn test_oneshot_query_end_to_end() {
-    let messages = collect_messages("What is 2+2? Answer with just the number.", default_options())
-        .await
-        .expect("Query failed");
+    let messages = collect_messages(
+        "What is 2+2? Answer with just the number.",
+        default_options(),
+    )
+    .await
+    .expect("Query failed");
 
     assert_message_types(&messages, &["system", "assistant", "result"]);
 

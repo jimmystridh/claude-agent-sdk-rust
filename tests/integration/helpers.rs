@@ -2,9 +2,7 @@
 
 #![cfg(feature = "integration-tests")]
 
-use claude_agents_sdk::{
-    query, ClaudeAgentOptions, Message, PermissionMode, ResultMessage,
-};
+use claude_agents_sdk::{query, ClaudeAgentOptions, Message, PermissionMode, ResultMessage};
 use std::time::Duration;
 use tokio_stream::StreamExt;
 

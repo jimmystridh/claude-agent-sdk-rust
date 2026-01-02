@@ -105,10 +105,7 @@ pub async fn query(
 ///     Ok(())
 /// }
 /// ```
-pub async fn query_all(
-    prompt: &str,
-    options: Option<ClaudeAgentOptions>,
-) -> Result<Vec<Message>> {
+pub async fn query_all(prompt: &str, options: Option<ClaudeAgentOptions>) -> Result<Vec<Message>> {
     use tokio_stream::StreamExt;
 
     let mut stream = query(prompt, options, None).await?;

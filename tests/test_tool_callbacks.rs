@@ -53,8 +53,9 @@ fn test_permission_result_deny_with_message() {
 #[test]
 fn test_permission_result_allow_with_updated_input() {
     let updated_input = serde_json::json!({"safe_mode": true, "param": "value"});
-    let result =
-        PermissionResult::Allow(PermissionResultAllow::with_updated_input(updated_input.clone()));
+    let result = PermissionResult::Allow(PermissionResultAllow::with_updated_input(
+        updated_input.clone(),
+    ));
 
     match result {
         PermissionResult::Allow(allow) => {
@@ -229,7 +230,11 @@ fn test_options_with_can_use_tool() {
     use std::pin::Pin;
 
     let callback: Arc<
-        dyn Fn(String, serde_json::Value, ToolPermissionContext) -> Pin<Box<dyn Future<Output = PermissionResult> + Send>>
+        dyn Fn(
+                String,
+                serde_json::Value,
+                ToolPermissionContext,
+            ) -> Pin<Box<dyn Future<Output = PermissionResult> + Send>>
             + Send
             + Sync,
     > = Arc::new(|tool_name, _input, _context| {

@@ -150,12 +150,15 @@ impl SubprocessTransport {
         // Permission mode
         if let Some(mode) = options.permission_mode {
             args.push("--permission-mode".to_string());
-            args.push(match mode {
-                PermissionMode::Default => "default",
-                PermissionMode::AcceptEdits => "acceptEdits",
-                PermissionMode::Plan => "plan",
-                PermissionMode::BypassPermissions => "bypassPermissions",
-            }.to_string());
+            args.push(
+                match mode {
+                    PermissionMode::Default => "default",
+                    PermissionMode::AcceptEdits => "acceptEdits",
+                    PermissionMode::Plan => "plan",
+                    PermissionMode::BypassPermissions => "bypassPermissions",
+                }
+                .to_string(),
+            );
         }
 
         // Model
@@ -239,10 +242,9 @@ impl SubprocessTransport {
                 args.push(path.to_string_lossy().to_string());
             }
             McpServersConfig::Map(servers) if !servers.is_empty() => {
-                let json = serde_json::to_string(servers)
-                    .map_err(|e| ClaudeSDKError::configuration(format!(
-                        "Failed to serialize MCP servers: {}", e
-                    )))?;
+                let json = serde_json::to_string(servers).map_err(|e| {
+                    ClaudeSDKError::configuration(format!("Failed to serialize MCP servers: {}", e))
+                })?;
                 args.push("--mcp-servers".to_string());
                 args.push(json);
             }
@@ -265,11 +267,14 @@ impl SubprocessTransport {
         if let Some(ref sources) = options.setting_sources {
             for source in sources {
                 args.push("--setting-source".to_string());
-                args.push(match source {
-                    SettingSource::User => "user",
-                    SettingSource::Project => "project",
-                    SettingSource::Local => "local",
-                }.to_string());
+                args.push(
+                    match source {
+                        SettingSource::User => "user",
+                        SettingSource::Project => "project",
+                        SettingSource::Local => "local",
+                    }
+                    .to_string(),
+                );
             }
         }
 
@@ -291,30 +296,30 @@ impl SubprocessTransport {
 
         // Sandbox settings
         if let Some(ref sandbox) = options.sandbox {
-            let json = serde_json::to_string(sandbox)
-                .map_err(|e| ClaudeSDKError::configuration(format!(
-                    "Failed to serialize sandbox settings: {}", e
-                )))?;
+            let json = serde_json::to_string(sandbox).map_err(|e| {
+                ClaudeSDKError::configuration(format!(
+                    "Failed to serialize sandbox settings: {}",
+                    e
+                ))
+            })?;
             args.push("--sandbox".to_string());
             args.push(json);
         }
 
         // Output format
         if let Some(ref format) = options.output_format {
-            let json = serde_json::to_string(format)
-                .map_err(|e| ClaudeSDKError::configuration(format!(
-                    "Failed to serialize output format: {}", e
-                )))?;
+            let json = serde_json::to_string(format).map_err(|e| {
+                ClaudeSDKError::configuration(format!("Failed to serialize output format: {}", e))
+            })?;
             args.push("--output-format-schema".to_string());
             args.push(json);
         }
 
         // Agents
         if let Some(ref agents) = options.agents {
-            let json = serde_json::to_string(agents)
-                .map_err(|e| ClaudeSDKError::configuration(format!(
-                    "Failed to serialize agents: {}", e
-                )))?;
+            let json = serde_json::to_string(agents).map_err(|e| {
+                ClaudeSDKError::configuration(format!("Failed to serialize agents: {}", e))
+            })?;
             args.push("--agents".to_string());
             args.push(json);
         }
@@ -322,10 +327,12 @@ impl SubprocessTransport {
         // Beta features
         for beta in &options.betas {
             args.push("--beta".to_string());
-            args.push(serde_json::to_string(beta)
-                .unwrap_or_else(|_| format!("{:?}", beta))
-                .trim_matches('"')
-                .to_string());
+            args.push(
+                serde_json::to_string(beta)
+                    .unwrap_or_else(|_| format!("{:?}", beta))
+                    .trim_matches('"')
+                    .to_string(),
+            );
         }
 
         // Extra args
@@ -520,9 +527,10 @@ impl Transport for SubprocessTransport {
     }
 
     async fn write(&self, data: &str) -> Result<()> {
-        let stdin = self.stdin.as_ref().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Transport not connected")
-        })?;
+        let stdin = self
+            .stdin
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Transport not connected"))?;
 
         let mut stdin_guard = stdin.lock().await;
         trace!("Writing to CLI: {}", &data[..data.len().min(200)]);
@@ -564,10 +572,7 @@ impl Transport for SubprocessTransport {
         // Wait for process to exit or kill it
         if let Some(mut process) = self.process.take() {
             // Give it a moment to exit gracefully
-            match tokio::time::timeout(
-                std::time::Duration::from_secs(2),
-                process.wait(),
-            ).await {
+            match tokio::time::timeout(std::time::Duration::from_secs(2), process.wait()).await {
                 Ok(Ok(status)) => {
                     debug!("CLI process exited with status: {:?}", status);
                 }
@@ -602,7 +607,9 @@ impl Transport for SubprocessTransport {
 
 impl SubprocessTransport {
     /// Get the stdout receiver for message reading.
-    pub fn take_stdout_rx(&mut self) -> Option<tokio::sync::mpsc::Receiver<Result<serde_json::Value>>> {
+    pub fn take_stdout_rx(
+        &mut self,
+    ) -> Option<tokio::sync::mpsc::Receiver<Result<serde_json::Value>>> {
         self.stdout_rx.take()
     }
 
@@ -649,7 +656,9 @@ mod tests {
     #[test]
     fn test_build_env() {
         let mut options = ClaudeAgentOptions::default();
-        options.env.insert("CUSTOM_VAR".to_string(), "value".to_string());
+        options
+            .env
+            .insert("CUSTOM_VAR".to_string(), "value".to_string());
 
         let env = SubprocessTransport::build_env(&options);
 

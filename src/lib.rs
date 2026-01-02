@@ -57,18 +57,18 @@
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod errors;
-mod types;
-mod query;
 mod client;
+mod errors;
+mod query;
+mod types;
 
 pub mod _internal;
 
 // Re-export public API
-pub use errors::*;
-pub use types::*;
-pub use query::{query, query_all, query_chunks, query_result};
 pub use client::{ClaudeClient, ClaudeClientBuilder, ClientGuard};
+pub use errors::*;
+pub use query::{query, query_all, query_chunks, query_result};
+pub use types::*;
 
 // Re-export MCP tools when feature enabled
 #[cfg(feature = "mcp")]
@@ -76,7 +76,7 @@ pub use client::{ClaudeClient, ClaudeClientBuilder, ClientGuard};
 pub mod mcp;
 
 #[cfg(feature = "mcp")]
-pub use mcp::{SdkMcpTool, create_sdk_mcp_server, McpSdkServerConfig};
+pub use mcp::{create_sdk_mcp_server, McpSdkServerConfig, SdkMcpTool};
 
 /// SDK version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
