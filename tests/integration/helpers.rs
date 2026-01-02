@@ -69,13 +69,15 @@ pub fn get_result(messages: &[Message]) -> Option<&ResultMessage> {
 /// Assert that messages contain expected message types.
 pub fn assert_message_types(messages: &[Message], expected: &[&str]) {
     for expected_type in expected {
-        let found = messages.iter().any(|m| match (m, *expected_type) {
-            (Message::System(_), "system") => true,
-            (Message::Assistant(_), "assistant") => true,
-            (Message::User(_), "user") => true,
-            (Message::Result(_), "result") => true,
-            (Message::StreamEvent(_), "stream_event") => true,
-            _ => false,
+        let found = messages.iter().any(|m| {
+            matches!(
+                (m, *expected_type),
+                (Message::System(_), "system")
+                    | (Message::Assistant(_), "assistant")
+                    | (Message::User(_), "user")
+                    | (Message::Result(_), "result")
+                    | (Message::StreamEvent(_), "stream_event")
+            )
         });
         assert!(
             found,

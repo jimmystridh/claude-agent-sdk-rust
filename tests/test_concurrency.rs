@@ -2,6 +2,8 @@
 //!
 //! These tests verify thread-safety and concurrent access patterns.
 
+#![allow(clippy::type_complexity)]
+
 use claude_agents_sdk::{
     AssistantMessage, BaseHookInput, ClaudeAgentOptions, ClaudeClientBuilder, ContentBlock,
     HookCallback, HookContext, HookEvent, HookInput, HookMatcher, HookOutput, Message,

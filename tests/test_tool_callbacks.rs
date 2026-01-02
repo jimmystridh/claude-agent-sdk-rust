@@ -1,5 +1,7 @@
 //! Tests for tool permission callbacks and hook callbacks.
 
+#![allow(clippy::type_complexity)]
+
 use claude_agents_sdk::{
     ClaudeAgentOptions, HookCallback, HookContext, HookEvent, HookInput, HookMatcher, HookOutput,
     PermissionResult, PermissionResultAllow, PermissionResultDeny, PermissionUpdate,
