@@ -12,13 +12,10 @@
 
 ## In Progress
 
-### 2. Run Integration Tests
-Verify all tests pass against the real Claude API.
-
-## Backlog
-
 ### 3. Property-Based Testing
 Add `proptest` for fuzzing inputs - message parsing, option validation, edge cases.
+
+## Backlog
 
 ### 4. Add More Examples
 Expand `examples/` with real-world use cases:
