@@ -53,8 +53,8 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
-    # Only run if the OAuth token secret is available
-    if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+    # Only run on main branch when secret is configured (checked in step)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
     timeout-minutes: 30
     steps:
@@ -82,10 +82,17 @@ jobs:
           claude --version
 
       - name: Run integration tests
+        if: ${{ env.CLAUDE_CODE_OAUTH_TOKEN != '' }}
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           cargo test --features integration-tests -- --test-threads=1
+
+      - name: Skip integration tests (no token)
+        if: ${{ env.CLAUDE_CODE_OAUTH_TOKEN == '' }}
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: echo "Skipping integration tests - CLAUDE_CODE_OAUTH_TOKEN not configured"
 
   build:
     name: Build (${{ matrix.target }})
