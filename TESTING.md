@@ -67,7 +67,8 @@ make integration-shell
 |----------|------|-------------|
 | Core | `test_core.rs` | One-shot queries, streaming, message format |
 | Client | `test_client.rs` | Builder API, multi-turn, model selection |
-| Context | `test_context.rs` | Conversation memory across turns |
+| Context | `test_context.rs` | Session management, context persistence, turn tracking |
+| Concurrent | `test_concurrent.rs` | Parallel sessions, resource isolation |
 | Callbacks | `test_callbacks.rs` | Tool permission callbacks |
 | Hooks | `test_hooks.rs` | Lifecycle hooks (PreToolUse, PostToolUse) |
 | Cancellation | `test_cancellation.rs` | Timeouts, disconnects, task abort |
@@ -75,7 +76,7 @@ make integration-shell
 | Errors | `test_errors.rs` | Error handling, edge cases |
 | Tools | `test_tools.rs` | Tool configuration, result parsing |
 | System Prompt | `test_system_prompt.rs` | Custom and preset prompts |
-| Results | `test_results.rs` | Cost tracking, metadata |
+| Results | `test_results.rs` | Cost/budget tracking, token usage |
 | Edge Cases | `test_edge_cases.rs` | Unicode, special chars, long prompts |
 
 ### Ignored Tests
@@ -98,6 +99,22 @@ cargo test --features integration-tests -- --ignored --test-threads=1
 - **Single-threaded**: `--test-threads=1` prevents race conditions
 - **Timeouts**: All tests have timeouts to prevent hangs
 - **Helpers**: Common utilities in `tests/integration/helpers.rs`
+
+## CI/CD Integration
+
+Integration tests run automatically in GitHub Actions when the `CLAUDE_CODE_OAUTH_TOKEN` secret is configured.
+
+### Setting Up CI Integration Tests
+
+1. Go to your repository Settings → Secrets and variables → Actions
+2. Add a new repository secret named `CLAUDE_CODE_OAUTH_TOKEN`
+3. Set the value to your Claude OAuth token (from `claude setup-token`)
+
+When configured, integration tests will run:
+- On every push to `main`
+- On every pull request to `main`
+
+The job is skipped gracefully if the secret is not configured, allowing forks and external contributors to run unit tests without API access.
 
 ## Writing New Tests
 

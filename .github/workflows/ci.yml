@@ -50,6 +50,43 @@ jobs:
       - name: Build docs
         run: cargo doc --no-deps --all-features
 
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    # Only run if the OAuth token secret is available
+    if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+    needs: test
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Claude CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude --version
+
+      - name: Run integration tests
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          cargo test --features integration-tests -- --test-threads=1
+
   build:
     name: Build (${{ matrix.target }})
     needs: test

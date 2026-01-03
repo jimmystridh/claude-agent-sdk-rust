@@ -204,10 +204,7 @@ async fn test_tokio_select_cancellation() {
 
     assert!(get_result(&messages).is_some());
 
-    eprintln!(
-        "Select test: completed={}",
-        completed
-    );
+    eprintln!("Select test: completed={}", completed);
 }
 
 /// Test task abort.
@@ -231,10 +228,7 @@ async fn test_task_abort() {
     // Wait for abort to process
     let result = handle.await;
 
-    assert!(
-        result.is_err(),
-        "Aborted task should return error"
-    );
+    assert!(result.is_err(), "Aborted task should return error");
 
     // Verify system still works
     tokio::time::sleep(Duration::from_millis(100)).await;
@@ -273,11 +267,7 @@ async fn test_sdk_timeout_respected() {
         Ok(messages) => {
             // Completed within timeout
             let result = get_result(&messages);
-            eprintln!(
-                "Completed in {:?}, result: {:?}",
-                elapsed,
-                result.is_some()
-            );
+            eprintln!("Completed in {:?}, result: {:?}", elapsed, result.is_some());
         }
         Err(e) => {
             // Might be timeout error
@@ -325,14 +315,20 @@ async fn test_rapid_reconnect_cycles() {
     for i in 0..5 {
         let mut client = ClaudeClient::new(Some(default_options()), None);
 
-        client.connect().await.expect(&format!("Connect {} failed", i));
+        client
+            .connect()
+            .await
+            .expect(&format!("Connect {} failed", i));
 
         // Optional: send a quick query
         if i % 2 == 0 {
             client.query("Hi").await.ok();
         }
 
-        client.disconnect().await.expect(&format!("Disconnect {} failed", i));
+        client
+            .disconnect()
+            .await
+            .expect(&format!("Disconnect {} failed", i));
 
         // Very brief pause
         tokio::time::sleep(Duration::from_millis(50)).await;
@@ -359,7 +355,10 @@ async fn test_reconnect_after_error() {
     // Reconnect should work
     client.connect().await.expect("Reconnect failed");
 
-    client.query("After reconnect").await.expect("Query after reconnect failed");
+    client
+        .query("After reconnect")
+        .await
+        .expect("Query after reconnect failed");
 
     let (response, result) = client
         .receive_response()

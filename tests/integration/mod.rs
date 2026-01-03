@@ -12,6 +12,7 @@ pub mod helpers;
 pub mod test_callbacks;
 pub mod test_cancellation;
 pub mod test_client;
+pub mod test_concurrent;
 pub mod test_context;
 pub mod test_core;
 pub mod test_edge_cases;

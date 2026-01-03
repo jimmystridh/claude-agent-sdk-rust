@@ -56,10 +56,7 @@ async fn test_tool_callback_invoked_on_tool_use() {
         .await
         .expect("Failed to query");
 
-    let (response, result) = client
-        .receive_response()
-        .await
-        .expect("Failed to receive");
+    let (response, result) = client.receive_response().await.expect("Failed to receive");
 
     client.disconnect().await.ok();
 
@@ -83,9 +80,7 @@ async fn test_tool_callback_invoked_on_tool_use() {
         eprintln!("Callback was invoked for tools: {:?}", *tools);
     } else {
         // Callback not invoked - this is acceptable depending on CLI config
-        eprintln!(
-            "Note: Callback not invoked. This is acceptable if CLI auto-approved the tool."
-        );
+        eprintln!("Note: Callback not invoked. This is acceptable if CLI auto-approved the tool.");
     }
 
     assert!(!result.is_error, "Query should complete without error");

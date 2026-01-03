@@ -64,11 +64,7 @@ async fn test_tool_result_parsing() {
 
     let mut client = ClaudeClient::new(Some(options), None);
 
-    let connect_result = tokio::time::timeout(
-        Duration::from_secs(30),
-        client.connect(),
-    )
-    .await;
+    let connect_result = tokio::time::timeout(Duration::from_secs(30), client.connect()).await;
 
     match connect_result {
         Ok(Ok(_)) => {}

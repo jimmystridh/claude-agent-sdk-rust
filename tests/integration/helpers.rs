@@ -116,12 +116,12 @@ pub async fn collect_messages_verbose(
             match msg {
                 Ok(m) => messages.push(m),
                 Err(e) => {
-                    eprintln!(
-                        "Stream error after {} messages: {:?}",
+                    eprintln!("Stream error after {} messages: {:?}", messages.len(), e);
+                    return Err(format!(
+                        "Error in stream after {} messages: {:?}",
                         messages.len(),
                         e
-                    );
-                    return Err(format!("Error in stream after {} messages: {:?}", messages.len(), e));
+                    ));
                 }
             }
         }
@@ -171,15 +171,10 @@ pub fn extract_tool_uses(messages: &[Message]) -> Vec<&ToolUseBlock> {
 /// Count running claude processes (platform-specific).
 #[cfg(unix)]
 pub fn count_claude_processes() -> usize {
-    let output = Command::new("pgrep")
-        .args(["-f", "claude"])
-        .output()
-        .ok();
+    let output = Command::new("pgrep").args(["-f", "claude"]).output().ok();
 
     match output {
-        Some(o) if o.status.success() => {
-            String::from_utf8_lossy(&o.stdout).lines().count()
-        }
+        Some(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).lines().count(),
         _ => 0,
     }
 }

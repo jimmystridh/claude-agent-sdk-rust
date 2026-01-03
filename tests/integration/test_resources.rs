@@ -112,11 +112,7 @@ async fn test_cleanup_on_client_drop_without_disconnect() {
 async fn test_no_handle_leaks_sequential() {
     // Run many sessions and verify stable resource usage
     for i in 0..10 {
-        let messages = collect_messages(
-            &format!("Say 'session {}'", i),
-            default_options(),
-        )
-        .await;
+        let messages = collect_messages(&format!("Say 'session {}'", i), default_options()).await;
 
         match messages {
             Ok(msgs) => {
@@ -272,11 +268,7 @@ async fn stress_test_concurrent_bursts() {
         let handles: Vec<_> = (0..10)
             .map(|i| {
                 tokio::spawn(async move {
-                    collect_messages(
-                        &format!("Burst {} item {}", burst, i),
-                        quick_options(),
-                    )
-                    .await
+                    collect_messages(&format!("Burst {} item {}", burst, i), quick_options()).await
                 })
             })
             .collect();

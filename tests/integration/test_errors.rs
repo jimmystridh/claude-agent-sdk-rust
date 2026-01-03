@@ -22,17 +22,17 @@ use crate::integration::helpers::*;
 async fn test_special_characters_no_panic() {
     // Prompts that should definitely work
     let valid_prompts = [
-        "{\"test\": \"valid\"}",  // Valid JSON-like string
-        "```json\n{}\n```",       // Markdown code blocks
-        "Hello\r\nWorld\r\n",     // Windows line endings
-        "🎉🎊🎁",                 // Emoji only
+        "{\"test\": \"valid\"}", // Valid JSON-like string
+        "```json\n{}\n```",      // Markdown code blocks
+        "Hello\r\nWorld\r\n",    // Windows line endings
+        "🎉🎊🎁",                // Emoji only
     ];
 
     // Prompts that may or may not work (CLI may reject them)
     let edge_case_prompts = [
-        "\x00\x01\x02",           // Null bytes - likely rejected
-        "\n\n\n",                 // Just newlines - may be rejected
-        "\t\t\t",                 // Just tabs - may be rejected
+        "\x00\x01\x02", // Null bytes - likely rejected
+        "\n\n\n",       // Just newlines - may be rejected
+        "\t\t\t",       // Just tabs - may be rejected
     ];
 
     for prompt in valid_prompts {
@@ -57,7 +57,11 @@ async fn test_special_characters_no_panic() {
         // Either outcome is acceptable for edge cases - just don't panic
         match result {
             Ok(messages) => {
-                eprintln!("Edge case prompt {:?} succeeded with {} messages", prompt, messages.len());
+                eprintln!(
+                    "Edge case prompt {:?} succeeded with {} messages",
+                    prompt,
+                    messages.len()
+                );
             }
             Err(e) => {
                 eprintln!("Edge case prompt {:?} failed gracefully: {}", prompt, e);
@@ -107,7 +111,10 @@ async fn test_very_long_prompt() {
         Err(e) => {
             // If it fails, should be a clear error
             assert!(
-                e.contains("too long") || e.contains("limit") || e.contains("size") || !e.is_empty(),
+                e.contains("too long")
+                    || e.contains("limit")
+                    || e.contains("size")
+                    || !e.is_empty(),
                 "Error should be descriptive: {}",
                 e
             );
@@ -135,10 +142,7 @@ async fn test_connection_error_reporting() {
         Err(e) => {
             // If it failed, error should be clear
             let error_str = e.to_string();
-            assert!(
-                !error_str.is_empty(),
-                "Error message should not be empty"
-            );
+            assert!(!error_str.is_empty(), "Error message should not be empty");
             eprintln!("Connection error (for reference): {}", error_str);
         }
     }
@@ -152,10 +156,7 @@ async fn test_query_without_connect() {
     // Try to query without connecting - should fail gracefully
     let query_result = client.query("Hello").await;
 
-    assert!(
-        query_result.is_err(),
-        "Query without connect should fail"
-    );
+    assert!(query_result.is_err(), "Query without connect should fail");
 
     let error = query_result.unwrap_err();
     eprintln!("Query without connect error: {}", error);
@@ -251,7 +252,7 @@ async fn test_stream_error_propagation() {
 async fn test_short_timeout_behavior() {
     let options = ClaudeAgentOptions::new()
         .with_timeout_secs(1) // Very short
-        .with_max_turns(10)   // Allow many turns
+        .with_max_turns(10) // Allow many turns
         .with_permission_mode(PermissionMode::Default);
 
     let start = std::time::Instant::now();
@@ -272,7 +273,11 @@ async fn test_short_timeout_behavior() {
         Ok(Ok(messages)) => {
             // Completed within SDK timeout - that's fine
             let result = get_result(&messages);
-            eprintln!("Completed in {:?} with result: {:?}", elapsed, result.is_some());
+            eprintln!(
+                "Completed in {:?} with result: {:?}",
+                elapsed,
+                result.is_some()
+            );
         }
         Ok(Err(e)) => {
             // SDK error (possibly timeout)

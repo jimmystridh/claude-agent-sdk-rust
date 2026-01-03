@@ -9,8 +9,8 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use claude_agents_sdk::{
-    ClaudeAgentOptions, ClaudeClient, HookCallback, HookContext, HookEvent, HookInput,
-    HookMatcher, HookOutput, PermissionMode, SyncHookOutput,
+    ClaudeAgentOptions, ClaudeClient, HookCallback, HookContext, HookEvent, HookInput, HookMatcher,
+    HookOutput, PermissionMode, SyncHookOutput,
 };
 use tokio::sync::Mutex;
 
@@ -71,9 +71,7 @@ async fn test_pre_tool_use_hook_invoked() {
 
             eprintln!(
                 "PreToolUse hook test: called={}, tools={:?}, response={}",
-                hook_was_called,
-                *recorded_tools,
-                response
+                hook_was_called, *recorded_tools, response
             );
 
             // If the response contains the echo output, tool was used
@@ -104,7 +102,10 @@ async fn test_pre_tool_use_hook_modifies_input() {
         Box::pin(async move {
             called.store(true, Ordering::SeqCst);
             if let HookInput::PreToolUse(pre) = &input {
-                eprintln!("PreToolUse hook: tool={}, input={}", pre.tool_name, pre.tool_input);
+                eprintln!(
+                    "PreToolUse hook: tool={}, input={}",
+                    pre.tool_name, pre.tool_input
+                );
             }
             // Return default (no modification) - modifying input would require
             // returning a modified tool_input in the hook output
@@ -156,10 +157,7 @@ async fn test_post_tool_use_hook_invoked() {
         Box::pin(async move {
             called.store(true, Ordering::SeqCst);
             if let HookInput::PostToolUse(post) = input {
-                responses
-                    .lock()
-                    .await
-                    .push(post.tool_response.to_string());
+                responses.lock().await.push(post.tool_response.to_string());
             }
             HookOutput::Sync(SyncHookOutput::default())
         })
@@ -181,11 +179,7 @@ async fn test_post_tool_use_hook_invoked() {
         .with_max_turns(3);
     options.hooks = Some(hooks);
 
-    let result = collect_messages(
-        "Run 'echo post_hook_test' using bash.",
-        options,
-    )
-    .await;
+    let result = collect_messages("Run 'echo post_hook_test' using bash.", options).await;
 
     match result {
         Ok(messages) => {
@@ -275,7 +269,10 @@ async fn test_multiple_hooks_same_event() {
         Ok(_) => {
             // If hooks were invoked, both should have same count
             if count1 > 0 || count2 > 0 {
-                assert_eq!(count1, count2, "Both hooks should be called same number of times");
+                assert_eq!(
+                    count1, count2,
+                    "Both hooks should be called same number of times"
+                );
             }
         }
         Err(e) => eprintln!("Query error: {}", e),
@@ -422,7 +419,10 @@ async fn test_hook_matcher_specific_tool() {
         Ok(_) => {
             // Only Bash hook should be called (if any hooks were invoked)
             if bash_calls > 0 {
-                assert_eq!(other_calls, 0, "Read hook should not be called for Bash command");
+                assert_eq!(
+                    other_calls, 0,
+                    "Read hook should not be called for Bash command"
+                );
             }
         }
         Err(e) => eprintln!("Query error: {}", e),
