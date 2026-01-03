@@ -9,19 +9,15 @@
 - [x] Phase 7: Budget/cost verification
 - [x] Phase 8: Context & session management
 - [x] Phase 10: Docker infrastructure & CI
+- [x] Task 1: Fix compiler warnings
+- [x] Task 2: Fix failing integration tests
+- [x] Task 3: Property-based tests (proptest)
+- [x] Task 4: New examples (error_handling, streaming_progress)
+- [x] Task 5: Improve documentation (README, rustdoc examples)
+- [x] Task 6: MCP tests (29 tests for MCP types, builders, tool execution)
+- [x] Task 7: Changelog update (documented all new features)
 
 ## Backlog
-
-### 5. Improve Documentation
-- Add more rustdoc examples
-- Expand README with architecture diagram
-- API reference improvements
-
-### 6. MCP Integration Tests
-Tests for the MCP feature flag functionality.
-
-### 7. Changelog Update
-Document new test infrastructure in CHANGELOG.md.
 
 ### 8. Version Bump
 Prepare for next release when ready.

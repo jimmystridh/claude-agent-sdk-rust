@@ -24,8 +24,7 @@ fn arbitrary_tool_id() -> impl Strategy<Value = String> {
 }
 
 fn arbitrary_session_id() -> impl Strategy<Value = String> {
-    "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
-        .prop_map(|s| s.to_string())
+    "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}".prop_map(|s| s.to_string())
 }
 
 // ============================================================================

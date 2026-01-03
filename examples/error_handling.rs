@@ -100,7 +100,8 @@ async fn query_error_recovery() {
                         }
                         Ok(Message::Result(result)) => {
                             if result.is_error {
-                                last_error = Some(format!("Query returned error: {}", result.subtype));
+                                last_error =
+                                    Some(format!("Query returned error: {}", result.subtype));
                                 break;
                             }
                             got_result = true;

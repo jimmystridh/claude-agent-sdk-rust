@@ -195,15 +195,35 @@ enum ContentBlock {
 Run the examples:
 
 ```bash
-# Simple query
+# Simple one-shot query
 cargo run --example simple_query
 
 # Streaming client with multiple queries
 cargo run --example streaming_client
 
-# Tool permission callback
-cargo run --example with_tools
+# Tool permission callbacks
+cargo run --example tool_permission_callback
+
+# Lifecycle hooks (PreToolUse, PostToolUse)
+cargo run --example hooks
+
+# Error handling patterns
+cargo run --example error_handling
+
+# Streaming with progress indicators
+cargo run --example streaming_progress
+
+# System prompt configuration
+cargo run --example system_prompt
+
+# Budget limits
+cargo run --example max_budget_usd
+
+# MCP tools (requires --features mcp)
+cargo run --example mcp_calculator --features mcp
 ```
+
+See `examples/` directory for the full list.
 
 ## Testing
 

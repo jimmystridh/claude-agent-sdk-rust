@@ -40,12 +40,7 @@ async fn spinner_progress() -> Result<(), Box<dyn std::error::Error>> {
         .with_permission_mode(PermissionMode::Default)
         .with_max_turns(1);
 
-    let mut stream = query(
-        "Write a haiku about Rust programming.",
-        Some(options),
-        None,
-    )
-    .await?;
+    let mut stream = query("Write a haiku about Rust programming.", Some(options), None).await?;
 
     let spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let mut spinner_idx = 0;
@@ -141,7 +136,12 @@ async fn timed_streaming() -> Result<(), Box<dyn std::error::Error>> {
         .with_permission_mode(PermissionMode::Default)
         .with_max_turns(1);
 
-    let mut stream = query("Explain what a closure is in one sentence.", Some(options), None).await?;
+    let mut stream = query(
+        "Explain what a closure is in one sentence.",
+        Some(options),
+        None,
+    )
+    .await?;
 
     let start = Instant::now();
     let mut last_update = start;
