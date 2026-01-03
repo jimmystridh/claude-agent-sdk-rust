@@ -12,13 +12,10 @@
 
 ## In Progress
 
-### 1. Fix Compiler Warnings
-Clean up unused imports and functions in test helpers.
-
-## Backlog
-
 ### 2. Run Integration Tests
 Verify all tests pass against the real Claude API.
+
+## Backlog
 
 ### 3. Property-Based Testing
 Add `proptest` for fuzzing inputs - message parsing, option validation, edge cases.
