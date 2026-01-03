@@ -40,12 +40,16 @@ tokio-test = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 pretty_assertions = "1.4"
 mockall = "0.12"
+proptest = "1.4"
+tempfile = "3.9"
 
 [features]
 default = []
 mcp = ["mcp-core"]
 # Enable integration tests that require Claude CLI and make API calls
 integration-tests = []
+# Enable stress tests (run with --ignored flag)
+stress-tests = []
 
 [[example]]
 name = "simple_query"

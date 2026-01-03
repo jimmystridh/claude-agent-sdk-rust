@@ -205,6 +205,60 @@ cargo run --example streaming_client
 cargo run --example with_tools
 ```
 
+## Testing
+
+### Unit Tests
+
+Unit tests run without authentication:
+
+```bash
+cargo test
+# or
+make test
+```
+
+### Integration Tests
+
+Integration tests run against the real Claude API in Docker. They require authentication.
+
+**Setup (one-time):**
+
+```bash
+# Generate an OAuth token (requires Claude Pro/Max subscription)
+claude setup-token
+
+# Create .env file with your token
+cp .env.example .env
+# Edit .env and paste your token
+```
+
+**Run tests:**
+
+```bash
+# Run all integration tests
+make integration-test
+
+# Run with verbose output
+make integration-test-verbose
+
+# Run specific test
+./scripts/run-integration-tests.sh test_oneshot
+
+# Interactive shell for debugging
+make integration-shell
+```
+
+**What's tested:**
+
+- Core query functionality (one-shot and streaming)
+- Multi-turn conversations with context
+- Tool permission callbacks
+- Cancellation and timeout handling
+- Resource cleanup (no process leaks)
+- Error handling and edge cases
+
+See [TESTING.md](TESTING.md) for the complete testing guide.
+
 ## Error Handling
 
 The SDK provides `ClaudeSDKError`, a comprehensive error type for all failure modes.

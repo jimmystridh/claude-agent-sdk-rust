@@ -22,3 +22,8 @@ Thumbs.db
 
 # Test output
 *.log
+
+# Environment files with credentials (NEVER commit these!)
+.env
+.env.local
+.env.*.local

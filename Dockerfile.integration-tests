@@ -1,0 +1,70 @@
+# Dockerfile for running integration tests
+#
+# Authentication Options:
+#   Option 1: Anthropic API Key
+#     Set ANTHROPIC_API_KEY environment variable
+#
+#   Option 2: Claude Code OAuth Token (for Pro/Max users)
+#     Generate token locally: claude setup-token
+#     Set CLAUDE_CODE_OAUTH_TOKEN environment variable
+#
+# Usage:
+#   # Build the image
+#   docker build -f Dockerfile.integration-tests -t claude-sdk-tests .
+#
+#   # Run with API key
+#   docker run --rm \
+#     -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+#     claude-sdk-tests
+#
+#   # Run with OAuth token
+#   docker run --rm \
+#     -e CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
+#     claude-sdk-tests
+#
+#   # Run with .env file
+#   docker run --rm --env-file .env claude-sdk-tests
+#
+#   # Run specific test
+#   docker run --rm --env-file .env claude-sdk-tests \
+#     cargo test --features integration-tests -- test_oneshot --test-threads=1
+#
+#   # Run with verbose output
+#   docker run --rm --env-file .env claude-sdk-tests \
+#     cargo test --features integration-tests -- --test-threads=1 --nocapture
+#
+#   # Interactive shell for debugging
+#   docker run --rm -it --env-file .env claude-sdk-tests bash
+
+FROM rust:1.84-bookworm
+
+# Install Node.js (required for Claude CLI)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Claude CLI globally
+RUN npm install -g @anthropic-ai/claude-code
+
+# Create app directory
+WORKDIR /app
+
+# Copy Cargo files first for dependency caching
+COPY Cargo.toml Cargo.lock* ./
+
+# Create dummy src to build dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release 2>/dev/null || true
+RUN rm -rf src
+
+# Copy source code
+COPY . .
+
+# Build the project
+RUN cargo build --features integration-tests
+
+# Verify Claude CLI is available
+RUN claude --version || echo "Claude CLI installation check"
+
+# Default command: run integration tests (single-threaded for stability)
+CMD ["cargo", "test", "--features", "integration-tests", "--", "--test-threads=1"]

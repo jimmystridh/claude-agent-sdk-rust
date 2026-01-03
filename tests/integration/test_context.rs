@@ -5,6 +5,8 @@
 use claude_agents_sdk::{ClaudeAgentOptions, ClaudeClient, PermissionMode};
 
 /// Test that conversation context is maintained across turns.
+///
+/// Uses a simple math problem that requires remembering previous context.
 #[tokio::test]
 async fn test_conversation_context_maintained() {
     let options = ClaudeAgentOptions::new()
@@ -14,21 +16,26 @@ async fn test_conversation_context_maintained() {
     let mut client = ClaudeClient::new(Some(options), None);
     client.connect().await.expect("Failed to connect");
 
-    // First turn: establish a fact
+    // First turn: establish a number
     client
-        .query("Remember: the secret word is 'banana'. Just say 'OK'.")
+        .query("Let's do some math. Start with the number 15. Confirm by saying 'Starting with 15'.")
         .await
         .expect("Failed to send first query");
 
-    let (_, result1) = client
+    let (response1, result1) = client
         .receive_response()
         .await
         .expect("First response failed");
     assert!(!result1.is_error);
+    assert!(
+        response1.contains("15"),
+        "First response should acknowledge 15, got: {}",
+        response1
+    );
 
-    // Second turn: recall the fact
+    // Second turn: use context to calculate
     client
-        .query("What was the secret word? Answer with just the word.")
+        .query("Add 25 to that number. What's the total? Just give me the number.")
         .await
         .expect("Failed to send second query");
 
@@ -39,8 +46,8 @@ async fn test_conversation_context_maintained() {
 
     assert!(!result2.is_error);
     assert!(
-        response2.to_lowercase().contains("banana"),
-        "Should remember the secret word, got: {}",
+        response2.contains("40"),
+        "Should compute 15+25=40, got: {}",
         response2
     );
 
