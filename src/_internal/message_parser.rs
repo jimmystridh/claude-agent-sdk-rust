@@ -93,7 +93,7 @@ fn parse_assistant_message(raw: serde_json::Value) -> Result<Message> {
         .unwrap_or("unknown")
         .to_string();
 
-    let error = message_obj
+    let error = raw
         .get("error")
         .and_then(|v| v.as_str())
         .map(|s| match s {
@@ -716,6 +716,52 @@ mod tests {
             assert_eq!(e.session_id, "sess_456");
         } else {
             panic!("Expected stream event");
+        }
+    }
+
+    #[test]
+    fn test_parse_assistant_message_error_from_top_level() {
+        // Error field should be read from top-level data, not from message
+        let raw = serde_json::json!({
+            "type": "assistant",
+            "error": "rate_limit",
+            "message": {
+                "content": [
+                    {"type": "text", "text": "Error occurred"}
+                ],
+                "model": "claude-3"
+            }
+        });
+
+        let msg = parse_message(raw).unwrap();
+        match msg {
+            Message::Assistant(asst) => {
+                assert_eq!(asst.error, Some(AssistantMessageError::RateLimit));
+            }
+            _ => panic!("Expected assistant message"),
+        }
+    }
+
+    #[test]
+    fn test_parse_assistant_message_error_not_from_message_obj() {
+        // Error field nested inside message should NOT be picked up
+        let raw = serde_json::json!({
+            "type": "assistant",
+            "message": {
+                "content": [
+                    {"type": "text", "text": "Hello"}
+                ],
+                "model": "claude-3",
+                "error": "rate_limit"
+            }
+        });
+
+        let msg = parse_message(raw).unwrap();
+        match msg {
+            Message::Assistant(asst) => {
+                assert!(asst.error.is_none());
+            }
+            _ => panic!("Expected assistant message"),
         }
     }
 
