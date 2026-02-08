@@ -1,0 +1,37 @@
+src/_internal/query.rs
+  0ac597398b66e6e8 12,75-77,102,138,150,163,172,202-204,220-226,631-648
+tests/integration/test_resources.rs
+  0ac597398b66e6e8 59
+tests/integration/test_errors.rs
+  0ac597398b66e6e8 216
+tests/integration/helpers.rs
+  0ac597398b66e6e8 29,111
+src/_internal/transport/subprocess.rs
+  0ac597398b66e6e8 48-49,466,487,492-496,499,503,507,557-563
+tests/integration/test_cancellation.rs
+  0ac597398b66e6e8 65
+src/_internal/client.rs
+  0ac597398b66e6e8 20,143-145,150-159,178-194
+tests/integration/test_core.rs
+  0ac597398b66e6e8 135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "5a0bf38e0b469d0d6811d28c62969dc257661e21",
+  "prompts": {
+    "0ac597398b66e6e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "70199c34-eaf3-408b-be2f-fc617d14c158",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Jimmy Stridh <jimmystridh@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 153,
+      "total_deletions": 82,
+      "accepted_lines": 97,
+      "overriden_lines": 0
+    }
+  }
+}
