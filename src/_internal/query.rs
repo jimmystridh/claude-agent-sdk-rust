@@ -522,6 +522,9 @@ impl Query {
                 HookEvent::Stop => "Stop",
                 HookEvent::SubagentStop => "SubagentStop",
                 HookEvent::PreCompact => "PreCompact",
+                HookEvent::Notification => "Notification",
+                HookEvent::SubagentStart => "SubagentStart",
+                HookEvent::PermissionRequest => "PermissionRequest",
             };
 
             config.insert(

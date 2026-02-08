@@ -155,10 +155,10 @@ fn test_parse_assistant_message_with_thinking() {
 fn test_parse_assistant_message_with_error() {
     let raw = json!({
         "type": "assistant",
+        "error": "rate_limit",
         "message": {
             "content": [{"type": "text", "text": "Error occurred"}],
-            "model": "claude-3",
-            "error": "rate_limit"
+            "model": "claude-3"
         }
     });
 
