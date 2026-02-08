@@ -266,6 +266,9 @@ fn test_hook_event_variants() {
         HookEvent::Stop,
         HookEvent::SubagentStop,
         HookEvent::PreCompact,
+        HookEvent::Notification,
+        HookEvent::SubagentStart,
+        HookEvent::PermissionRequest,
     ];
 
     // Verify they can be used as hash keys
@@ -274,9 +277,12 @@ fn test_hook_event_variants() {
         map.insert(event, format!("{:?}", event));
     }
 
-    assert_eq!(map.len(), 7);
+    assert_eq!(map.len(), 10);
     assert!(map.contains_key(&HookEvent::PreToolUse));
     assert!(map.contains_key(&HookEvent::PostToolUse));
+    assert!(map.contains_key(&HookEvent::Notification));
+    assert!(map.contains_key(&HookEvent::SubagentStart));
+    assert!(map.contains_key(&HookEvent::PermissionRequest));
 }
 
 #[test]
@@ -354,6 +360,7 @@ async fn test_hook_callback_execution() {
         hook_event_name: "PreToolUse".to_string(),
         tool_name: "TestTool".to_string(),
         tool_input: serde_json::json!({"param": "value"}),
+        tool_use_id: "tu_123".to_string(),
     });
 
     // Call the callback
@@ -363,6 +370,117 @@ async fn test_hook_callback_execution() {
     match result {
         HookOutput::Sync(_) => {}
         _ => panic!("Expected sync output"),
+    }
+}
+
+#[test]
+fn test_notification_hook_input_deserialization() {
+    let json = serde_json::json!({
+        "hook_event_name": "Notification",
+        "session_id": "sess_1",
+        "transcript_path": "/tmp/t",
+        "cwd": "/test",
+        "message": "Build complete",
+        "title": "Build",
+        "notification_type": "info"
+    });
+
+    let input: HookInput = serde_json::from_value(json).unwrap();
+    match input {
+        HookInput::Notification(n) => {
+            assert_eq!(n.message, "Build complete");
+            assert_eq!(n.title, Some("Build".to_string()));
+            assert_eq!(n.notification_type, "info");
+        }
+        _ => panic!("Expected Notification input"),
+    }
+}
+
+#[test]
+fn test_subagent_start_hook_input_deserialization() {
+    let json = serde_json::json!({
+        "hook_event_name": "SubagentStart",
+        "session_id": "sess_1",
+        "transcript_path": "/tmp/t",
+        "cwd": "/test",
+        "agent_id": "agent_123",
+        "agent_type": "code_review"
+    });
+
+    let input: HookInput = serde_json::from_value(json).unwrap();
+    match input {
+        HookInput::SubagentStart(s) => {
+            assert_eq!(s.agent_id, "agent_123");
+            assert_eq!(s.agent_type, "code_review");
+        }
+        _ => panic!("Expected SubagentStart input"),
+    }
+}
+
+#[test]
+fn test_permission_request_hook_input_deserialization() {
+    let json = serde_json::json!({
+        "hook_event_name": "PermissionRequest",
+        "session_id": "sess_1",
+        "transcript_path": "/tmp/t",
+        "cwd": "/test",
+        "tool_name": "Bash",
+        "tool_input": {"command": "ls"}
+    });
+
+    let input: HookInput = serde_json::from_value(json).unwrap();
+    match input {
+        HookInput::PermissionRequest(p) => {
+            assert_eq!(p.tool_name, "Bash");
+            assert!(p.permission_suggestions.is_none());
+        }
+        _ => panic!("Expected PermissionRequest input"),
+    }
+}
+
+#[test]
+fn test_subagent_stop_hook_input_new_fields() {
+    let json = serde_json::json!({
+        "hook_event_name": "SubagentStop",
+        "session_id": "sess_1",
+        "transcript_path": "/tmp/t",
+        "cwd": "/test",
+        "stop_hook_active": true,
+        "agent_id": "agent_456",
+        "agent_transcript_path": "/tmp/agent_transcript",
+        "agent_type": "code_review"
+    });
+
+    let input: HookInput = serde_json::from_value(json).unwrap();
+    match input {
+        HookInput::SubagentStop(s) => {
+            assert!(s.stop_hook_active);
+            assert_eq!(s.agent_id, "agent_456");
+            assert_eq!(s.agent_transcript_path, "/tmp/agent_transcript");
+            assert_eq!(s.agent_type, "code_review");
+        }
+        _ => panic!("Expected SubagentStop input"),
+    }
+}
+
+#[test]
+fn test_pre_tool_use_hook_input_tool_use_id() {
+    let json = serde_json::json!({
+        "hook_event_name": "PreToolUse",
+        "session_id": "sess_1",
+        "transcript_path": "/tmp/t",
+        "cwd": "/test",
+        "tool_name": "Read",
+        "tool_input": {},
+        "tool_use_id": "tu_789"
+    });
+
+    let input: HookInput = serde_json::from_value(json).unwrap();
+    match input {
+        HookInput::PreToolUse(p) => {
+            assert_eq!(p.tool_use_id, "tu_789");
+        }
+        _ => panic!("Expected PreToolUse input"),
     }
 }
 

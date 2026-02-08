@@ -192,6 +192,7 @@ async fn test_concurrent_hook_callback_invocations() {
                     hook_event_name: "PreToolUse".to_string(),
                     tool_name: "TestTool".to_string(),
                     tool_input: serde_json::json!({}),
+                    tool_use_id: String::new(),
                 });
                 let _output = cb(input, None, HookContext::default()).await;
             })
@@ -312,6 +313,7 @@ async fn test_hook_callback_with_shared_counter() {
                     hook_event_name: "PreToolUse".to_string(),
                     tool_name: tool.to_string(),
                     tool_input: serde_json::json!({}),
+                    tool_use_id: String::new(),
                 });
                 cb(input, None, HookContext::default()).await;
             })

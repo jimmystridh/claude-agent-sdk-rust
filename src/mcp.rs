@@ -92,6 +92,35 @@ impl ToolResult {
     }
 }
 
+/// Hints describing tool behavior for clients.
+///
+/// All properties are hints and not guaranteed to faithfully describe tool behavior.
+/// Clients should not make tool use decisions based solely on annotations from
+/// untrusted servers.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolAnnotations {
+    /// A human-readable title for the tool.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// If true, the tool does not modify its environment. Default: false.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_only_hint: Option<bool>,
+    /// If true, the tool may perform destructive updates. Default: true.
+    /// Only meaningful when `read_only_hint` is false.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub destructive_hint: Option<bool>,
+    /// If true, calling the tool repeatedly with the same arguments has no
+    /// additional effect. Default: false.
+    /// Only meaningful when `read_only_hint` is false.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idempotent_hint: Option<bool>,
+    /// If true, the tool may interact with an open world of external entities.
+    /// Default: true.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub open_world_hint: Option<bool>,
+}
+
 /// Input schema for a tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolInputSchema {
@@ -187,6 +216,8 @@ pub struct SdkMcpTool {
     pub input_schema: ToolInputSchema,
     /// Handler function.
     pub handler: ToolHandler,
+    /// Optional annotations describing tool behavior.
+    pub annotations: Option<ToolAnnotations>,
 }
 
 impl SdkMcpTool {
@@ -206,7 +237,14 @@ impl SdkMcpTool {
             description: description.into(),
             input_schema,
             handler: Arc::new(move |input| Box::pin(handler(input))),
+            annotations: None,
         }
+    }
+
+    /// Set annotations on this tool.
+    pub fn with_annotations(mut self, annotations: ToolAnnotations) -> Self {
+        self.annotations = Some(annotations);
+        self
     }
 }
 
@@ -378,5 +416,69 @@ mod tests {
         assert_eq!(config.name, "test-server");
         assert_eq!(config.version, "1.0.0");
         assert_eq!(tools.len(), 1);
+    }
+
+    #[test]
+    fn test_tool_annotations_default() {
+        let annotations = ToolAnnotations::default();
+        assert!(annotations.title.is_none());
+        assert!(annotations.read_only_hint.is_none());
+        assert!(annotations.destructive_hint.is_none());
+        assert!(annotations.idempotent_hint.is_none());
+        assert!(annotations.open_world_hint.is_none());
+    }
+
+    #[test]
+    fn test_tool_annotations_serialization() {
+        let annotations = ToolAnnotations {
+            title: Some("My Tool".to_string()),
+            read_only_hint: Some(true),
+            destructive_hint: Some(false),
+            idempotent_hint: Some(true),
+            open_world_hint: Some(false),
+        };
+
+        let json = serde_json::to_value(&annotations).unwrap();
+        assert_eq!(json["title"], "My Tool");
+        assert_eq!(json["readOnlyHint"], true);
+        assert_eq!(json["destructiveHint"], false);
+        assert_eq!(json["idempotentHint"], true);
+        assert_eq!(json["openWorldHint"], false);
+    }
+
+    #[test]
+    fn test_tool_annotations_skips_none() {
+        let annotations = ToolAnnotations {
+            read_only_hint: Some(true),
+            ..Default::default()
+        };
+
+        let json = serde_json::to_value(&annotations).unwrap();
+        assert_eq!(json["readOnlyHint"], true);
+        assert!(json.get("title").is_none());
+        assert!(json.get("destructiveHint").is_none());
+    }
+
+    #[test]
+    fn test_sdk_mcp_tool_with_annotations() {
+        let tool = SdkMcpTool::new("test", "Test tool", ToolInputSchema::object(), |_| async {
+            ToolResult::text("ok")
+        })
+        .with_annotations(ToolAnnotations {
+            read_only_hint: Some(true),
+            ..Default::default()
+        });
+
+        assert!(tool.annotations.is_some());
+        assert_eq!(tool.annotations.unwrap().read_only_hint, Some(true));
+    }
+
+    #[test]
+    fn test_sdk_mcp_tool_no_annotations_by_default() {
+        let tool = SdkMcpTool::new("test", "Test tool", ToolInputSchema::object(), |_| async {
+            ToolResult::text("ok")
+        });
+
+        assert!(tool.annotations.is_none());
     }
 }

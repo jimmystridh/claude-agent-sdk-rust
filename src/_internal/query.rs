@@ -9,7 +9,7 @@
 //! - Control request/response lifecycle
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
 use tracing::{debug, error, trace, warn};
@@ -70,6 +70,11 @@ pub struct Query {
     initialization_result: Arc<RwLock<Option<serde_json::Value>>>,
     /// Timeout for CLI operations in seconds (0 = no timeout).
     timeout_secs: u64,
+    /// Agent definitions to send via initialize request.
+    agents: Option<HashMap<String, serde_json::Value>>,
+    /// Whether to close stdin when a Result message is received.
+    /// Used for one-shot queries with hooks/callbacks.
+    close_stdin_on_result: Arc<AtomicBool>,
 }
 
 impl Query {
@@ -77,6 +82,7 @@ impl Query {
     pub fn new(
         transport: SubprocessTransport,
         options: &ClaudeAgentOptions,
+        agents: Option<HashMap<String, serde_json::Value>>,
     ) -> (Self, mpsc::Receiver<Result<Message>>) {
         let (message_tx, message_rx) = mpsc::channel(256);
 
@@ -92,6 +98,8 @@ impl Query {
             shutdown_tx: None,
             initialization_result: Arc::new(RwLock::new(None)),
             timeout_secs: options.timeout_secs.unwrap_or(DEFAULT_TIMEOUT_SECS),
+            agents,
+            close_stdin_on_result: Arc::new(AtomicBool::new(false)),
         };
 
         (query, message_rx)
@@ -127,6 +135,7 @@ impl Query {
         let pending_requests = Arc::clone(&self.pending_requests);
         let can_use_tool = self.can_use_tool.clone();
         let hook_callbacks = Arc::clone(&self.hook_callbacks);
+        let close_stdin_on_result = Arc::clone(&self.close_stdin_on_result);
 
         // Spawn background reader task
         let reader_task = tokio::spawn(async move {
@@ -138,6 +147,7 @@ impl Query {
                 can_use_tool,
                 hook_callbacks,
                 &mut shutdown_rx,
+                close_stdin_on_result,
             )
             .await;
         });
@@ -150,6 +160,7 @@ impl Query {
     }
 
     /// Background task that reads and routes messages.
+    #[allow(clippy::too_many_arguments)]
     async fn read_messages(
         mut stdout_rx: mpsc::Receiver<Result<serde_json::Value>>,
         transport: Arc<Mutex<SubprocessTransport>>,
@@ -158,6 +169,7 @@ impl Query {
         can_use_tool: Option<CanUseTool>,
         hook_callbacks: Arc<RwLock<HashMap<String, HookCallback>>>,
         shutdown_rx: &mut mpsc::Receiver<()>,
+        close_stdin_on_result: Arc<AtomicBool>,
     ) {
         loop {
             tokio::select! {
@@ -187,7 +199,9 @@ impl Query {
                                     &hook_callbacks,
                                 ).await;
                             } else {
-                                // Regular message
+                                // Regular message — check if it's a result
+                                let is_result = msg_type == "result";
+
                                 debug!("Routing regular message of type: {}", msg_type);
                                 match parse_message(raw) {
                                     Ok(msg) => {
@@ -201,6 +215,15 @@ impl Query {
                                         if message_tx.send(Err(e)).await.is_err() {
                                             break;
                                         }
+                                    }
+                                }
+
+                                // Close stdin after forwarding the Result message
+                                if is_result && close_stdin_on_result.load(Ordering::SeqCst) {
+                                    debug!("Result received, closing stdin");
+                                    let t = transport.lock().await;
+                                    if let Err(e) = t.end_input().await {
+                                        debug!("Error closing stdin after result: {}", e);
                                     }
                                 }
                             }
@@ -444,12 +467,15 @@ impl Query {
 
     /// Initialize the streaming session with the CLI.
     pub async fn initialize(&self) -> Result<serde_json::Value> {
-        // Build hooks configuration for initialization
         let hooks_config = self.build_hooks_config().await;
+        let agents_config = self.agents.as_ref().map(|a| {
+            serde_json::to_value(a).unwrap_or(serde_json::Value::Null)
+        });
 
         let result = self
             .send_control_request(ControlRequestPayload::Initialize {
                 hooks: hooks_config,
+                agents: agents_config,
             })
             .await?;
 
@@ -522,6 +548,9 @@ impl Query {
                 HookEvent::Stop => "Stop",
                 HookEvent::SubagentStop => "SubagentStop",
                 HookEvent::PreCompact => "PreCompact",
+                HookEvent::Notification => "Notification",
+                HookEvent::SubagentStart => "SubagentStart",
+                HookEvent::PermissionRequest => "PermissionRequest",
             };
 
             config.insert(
@@ -597,6 +626,24 @@ impl Query {
 
         let transport = self.transport.lock().await;
         transport.write(&msg.to_string()).await
+    }
+
+    /// Close stdin to signal no more input.
+    ///
+    /// Used by one-shot queries to tell the CLI that no further messages
+    /// will be sent, allowing it to finish and exit.
+    pub async fn end_input(&self) -> Result<()> {
+        let transport = self.transport.lock().await;
+        transport.end_input().await
+    }
+
+    /// Enable closing stdin when a Result message is received.
+    ///
+    /// Used for one-shot queries with hooks/callbacks where stdin must
+    /// stay open for bidirectional control protocol communication until
+    /// the query completes.
+    pub fn set_close_stdin_on_result(&self, value: bool) {
+        self.close_stdin_on_result.store(value, Ordering::SeqCst);
     }
 
     /// Stop the query handler.

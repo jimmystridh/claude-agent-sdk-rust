@@ -26,7 +26,7 @@ pub async fn collect_messages(
     options: ClaudeAgentOptions,
 ) -> Result<Vec<Message>, String> {
     let result = tokio::time::timeout(TEST_TIMEOUT, async {
-        let mut stream = query(prompt, Some(options), None)
+        let mut stream = query(prompt, Some(options))
             .await
             .map_err(|e| format!("Failed to start query: {}", e))?;
 
@@ -108,7 +108,7 @@ pub async fn collect_messages_verbose(
     options: ClaudeAgentOptions,
 ) -> Result<Vec<Message>, String> {
     let result = tokio::time::timeout(TEST_TIMEOUT, async {
-        let mut stream = query(prompt, Some(options), None)
+        let mut stream = query(prompt, Some(options))
             .await
             .map_err(|e| format!("Failed to start query: {:?}", e))?;
 

@@ -56,7 +56,7 @@ async fn test_process_cleanup_on_stream_drop() {
     let initial_count = count_claude_processes();
 
     for _ in 0..3 {
-        let mut stream = query("Say hello", Some(default_options()), None)
+        let mut stream = query("Say hello", Some(default_options()))
             .await
             .expect("Failed to start query");
 

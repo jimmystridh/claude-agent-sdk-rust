@@ -25,7 +25,6 @@ async fn test_drop_stream_mid_query() {
     let mut stream = query(
         "Write a story about a robot. Make it detailed with multiple paragraphs.",
         Some(options),
-        None,
     )
     .await
     .expect("Failed to start query");
@@ -63,7 +62,7 @@ async fn test_drop_stream_mid_query() {
 async fn test_drop_stream_immediately() {
     let options = default_options();
 
-    let stream = query("Hello", Some(options), None)
+    let stream = query("Hello", Some(options))
         .await
         .expect("Failed to start query");
 
