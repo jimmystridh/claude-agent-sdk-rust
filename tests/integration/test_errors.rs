@@ -213,7 +213,7 @@ async fn test_stream_error_propagation() {
         .with_max_turns(1)
         .with_permission_mode(PermissionMode::Default);
 
-    let stream_result = query("Hello", Some(options), None).await;
+    let stream_result = query("Hello", Some(options)).await;
 
     match stream_result {
         Ok(mut stream) => {

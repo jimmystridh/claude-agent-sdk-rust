@@ -45,7 +45,8 @@ pub struct SubprocessTransport {
     /// Child process handle.
     process: Option<Child>,
     /// Stdin handle (wrapped in mutex for thread safety).
-    stdin: Option<Arc<Mutex<tokio::process::ChildStdin>>>,
+    /// Inner Option allows dropping stdin to send EOF to the child process.
+    stdin: Option<Arc<Mutex<Option<tokio::process::ChildStdin>>>>,
     /// Stdout lines stream receiver.
     stdout_rx: Option<tokio::sync::mpsc::Receiver<Result<serde_json::Value>>>,
     /// Stderr callback.
@@ -462,7 +463,7 @@ impl Transport for SubprocessTransport {
         let stdin = child.stdin.take().ok_or_else(|| {
             ClaudeSDKError::cli_connection("Failed to open stdin to CLI process")
         })?;
-        self.stdin = Some(Arc::new(Mutex::new(stdin)));
+        self.stdin = Some(Arc::new(Mutex::new(Some(stdin))));
 
         // Take stdout and start reader task
         let stdout = child.stdout.take().ok_or_else(|| {
@@ -483,23 +484,27 @@ impl Transport for SubprocessTransport {
     }
 
     async fn write(&self, data: &str) -> Result<()> {
-        let stdin = self
+        let stdin_arc = self
             .stdin
             .as_ref()
             .ok_or_else(|| ClaudeSDKError::cli_connection("Transport not connected"))?;
 
-        let mut stdin_guard = stdin.lock().await;
+        let mut stdin_guard = stdin_arc.lock().await;
+        let stdin = stdin_guard
+            .as_mut()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Stdin already closed"))?;
+
         trace!("Writing to CLI: {}", &data[..data.len().min(200)]);
 
-        stdin_guard.write_all(data.as_bytes()).await.map_err(|e| {
+        stdin.write_all(data.as_bytes()).await.map_err(|e| {
             ClaudeSDKError::cli_connection_with_source("Failed to write to CLI stdin", e)
         })?;
 
-        stdin_guard.write_all(b"\n").await.map_err(|e| {
+        stdin.write_all(b"\n").await.map_err(|e| {
             ClaudeSDKError::cli_connection_with_source("Failed to write newline to CLI stdin", e)
         })?;
 
-        stdin_guard.flush().await.map_err(|e| {
+        stdin.flush().await.map_err(|e| {
             ClaudeSDKError::cli_connection_with_source("Failed to flush CLI stdin", e)
         })?;
 
@@ -549,12 +554,13 @@ impl Transport for SubprocessTransport {
     }
 
     async fn end_input(&self) -> Result<()> {
-        // Closing stdin signals EOF to the process
-        if let Some(stdin) = &self.stdin {
-            let mut guard = stdin.lock().await;
-            guard.shutdown().await.map_err(|e| {
-                ClaudeSDKError::cli_connection_with_source("Failed to shutdown stdin", e)
-            })?;
+        // Drop the ChildStdin handle to send EOF to the process
+        if let Some(stdin_arc) = &self.stdin {
+            let mut guard = stdin_arc.lock().await;
+            if let Some(mut stdin) = guard.take() {
+                // Flush before dropping
+                let _ = stdin.flush().await;
+            }
         }
         Ok(())
     }

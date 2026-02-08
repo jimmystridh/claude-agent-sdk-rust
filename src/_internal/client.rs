@@ -16,11 +16,9 @@ use crate::types::*;
 
 /// A stream that keeps the InternalClient alive while consuming messages.
 ///
-/// This wrapper is used for one-shot queries with callbacks (streaming mode)
-/// to ensure the client (and its Query/reader task) stays alive until the
-/// stream is fully consumed or dropped.
+/// This wrapper is used for one-shot queries to ensure the client (and its
+/// Query/reader task) stays alive until the stream is fully consumed or dropped.
 pub struct ClientStream {
-    /// Holds the InternalClient to keep its background tasks alive.
     #[allow(dead_code)]
     client: InternalClient,
     receiver: tokio_stream::wrappers::ReceiverStream<Result<Message>>,
@@ -142,9 +140,23 @@ impl InternalClient {
             ));
         }
 
+        let has_hooks_or_callbacks =
+            options.can_use_tool.is_some() || options.hooks.is_some();
+
         let mut client = InternalClient::new(options);
         client.connect().await?;
         client.send_message(prompt).await?;
+
+        if has_hooks_or_callbacks {
+            // For queries with hooks/callbacks, stdin must stay open for
+            // bidirectional control protocol. The reader task will close
+            // stdin when it sees the Result message.
+            client.set_close_stdin_on_result(true);
+        } else {
+            // For simple queries, close stdin immediately so the CLI
+            // knows no more messages are coming and will exit.
+            client.end_input().await?;
+        }
 
         let rx = client
             .take_message_rx()
@@ -161,6 +173,23 @@ impl InternalClient {
             .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
 
         query.send_message(message).await
+    }
+
+    /// Enable closing stdin when a Result message is received.
+    fn set_close_stdin_on_result(&self, value: bool) {
+        if let Some(ref q) = self.query {
+            q.set_close_stdin_on_result(value);
+        }
+    }
+
+    /// Close stdin to signal no more input will be sent.
+    pub async fn end_input(&self) -> Result<()> {
+        let query = self
+            .query
+            .as_ref()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Client not connected"))?;
+
+        query.end_input().await
     }
 
     /// Get the message receiver.

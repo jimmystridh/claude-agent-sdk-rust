@@ -132,7 +132,7 @@ async fn test_streaming_user_message_format() {
 #[tokio::test]
 async fn test_stream_closes_after_completion() {
     let result = tokio::time::timeout(Duration::from_secs(30), async {
-        let mut stream = query("Say 'done'.", Some(default_options()), None)
+        let mut stream = query("Say 'done'.", Some(default_options()))
             .await
             .expect("Failed to start query");
 
