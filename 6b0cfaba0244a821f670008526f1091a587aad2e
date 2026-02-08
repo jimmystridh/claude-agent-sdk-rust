@@ -1,0 +1,31 @@
+src/types.rs
+  0ac597398b66e6e8 291-296,320,326-328,338,346-348,358,380,393,406,410-418,438,447-497,516-521,540-542,555-557,584-618,631-636
+tests/test_message_parser.rs
+  0ac597398b66e6e8 158,161
+src/_internal/query.rs
+  0ac597398b66e6e8 525-527
+tests/test_tool_callbacks.rs
+  0ac597398b66e6e8 269-271,280,283-285,363,377-486
+tests/test_concurrency.rs
+  0ac597398b66e6e8 195,316
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "6b0cfaba0244a821f670008526f1091a587aad2e",
+  "prompts": {
+    "0ac597398b66e6e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "70199c34-eaf3-408b-be2f-fc617d14c158",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Jimmy Stridh <jimmystridh@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 258,
+      "total_deletions": 3,
+      "accepted_lines": 258,
+      "overriden_lines": 0
+    }
+  }
+}
