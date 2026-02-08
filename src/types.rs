@@ -1478,6 +1478,9 @@ pub enum ControlRequestPayload {
     Initialize {
         /// Hook configurations.
         hooks: Option<serde_json::Value>,
+        /// Agent definitions.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        agents: Option<serde_json::Value>,
     },
     /// Set permission mode request.
     #[serde(rename = "set_permission_mode")]

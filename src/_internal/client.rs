@@ -14,38 +14,6 @@ use super::transport::{SubprocessTransport, Transport};
 use crate::errors::{ClaudeSDKError, Result};
 use crate::types::*;
 
-/// A stream that keeps the Query alive while consuming messages.
-///
-/// This wrapper ensures the Query (and its background reader task) stays alive
-/// until the stream is fully consumed or dropped.
-pub struct QueryStream {
-    /// Holds the Query to keep its background tasks alive; never read directly.
-    #[allow(dead_code)]
-    query: Query,
-    receiver: tokio_stream::wrappers::ReceiverStream<Result<Message>>,
-}
-
-impl QueryStream {
-    fn new(query: Query, rx: mpsc::Receiver<Result<Message>>) -> Self {
-        Self {
-            query,
-            receiver: tokio_stream::wrappers::ReceiverStream::new(rx),
-        }
-    }
-}
-
-impl Stream for QueryStream {
-    type Item = Result<Message>;
-
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        Pin::new(&mut self.receiver).poll_next(cx)
-    }
-}
-
-// QueryStream is automatically Send because all its fields are Send:
-// - Query contains Arc<Mutex<...>>, Arc<RwLock<...>>, etc. which are all Send
-// - ReceiverStream<Result<Message>> is Send when Result<Message> is Send
-
 /// A stream that keeps the InternalClient alive while consuming messages.
 ///
 /// This wrapper is used for one-shot queries with callbacks (streaming mode)
@@ -115,6 +83,19 @@ impl InternalClient {
         Ok(())
     }
 
+    /// Convert agent definitions to serializable format for the initialize request.
+    fn build_agents_dict(options: &ClaudeAgentOptions) -> Option<std::collections::HashMap<String, serde_json::Value>> {
+        options.agents.as_ref().map(|agents| {
+            agents
+                .iter()
+                .map(|(name, def)| {
+                    let value = serde_json::to_value(def).unwrap_or(serde_json::Value::Null);
+                    (name.clone(), value)
+                })
+                .collect()
+        })
+    }
+
     /// Connect to the CLI in streaming mode.
     pub async fn connect(&mut self) -> Result<()> {
         if self.connected {
@@ -123,12 +104,13 @@ impl InternalClient {
 
         self.validate_options()?;
 
-        // Create transport in streaming mode
-        let mut transport = SubprocessTransport::new(&self.options, None)?;
+        let agents_dict = Self::build_agents_dict(&self.options);
+
+        let mut transport = SubprocessTransport::new(&self.options)?;
         transport.connect().await?;
 
-        // Create query handler
-        let (query, message_rx) = Query::new(transport, &self.options);
+        // Create query handler with agents
+        let (query, message_rx) = Query::new(transport, &self.options, agents_dict);
         self.message_rx = Some(message_rx);
         self.query = Some(query);
 
@@ -146,9 +128,9 @@ impl InternalClient {
         Ok(())
     }
 
-    /// Process a one-shot query (non-streaming mode).
+    /// Process a one-shot query.
     ///
-    /// Returns a stream of messages from the CLI.
+    /// Always uses streaming mode. Returns a stream of messages from the CLI.
     pub async fn process_query(
         options: ClaudeAgentOptions,
         prompt: &str,
@@ -160,30 +142,15 @@ impl InternalClient {
             ));
         }
 
-        // For one-shot queries with callbacks, we need streaming mode
-        if options.can_use_tool.is_some() || options.hooks.is_some() {
-            // Use streaming mode for callbacks
-            let mut client = InternalClient::new(options);
-            client.connect().await?;
-            client.send_message(prompt).await?;
-            // Take the message receiver before consuming client
-            let rx = client
-                .take_message_rx()
-                .ok_or_else(|| ClaudeSDKError::internal("Message receiver not available"))?;
-            // Return a stream that keeps the client alive
-            return Ok(Box::pin(ClientStream::new(client, rx)));
-        }
+        let mut client = InternalClient::new(options);
+        client.connect().await?;
+        client.send_message(prompt).await?;
 
-        // Create transport in non-streaming mode
-        let mut transport = SubprocessTransport::new(&options, Some(prompt.to_string()))?;
-        transport.connect().await?;
+        let rx = client
+            .take_message_rx()
+            .ok_or_else(|| ClaudeSDKError::internal("Message receiver not available"))?;
 
-        // Create query handler
-        let (mut query, message_rx) = Query::new(transport, &options);
-        query.start().await?;
-
-        // Return stream that keeps query alive until fully consumed
-        Ok(Box::pin(QueryStream::new(query, message_rx)))
+        Ok(Box::pin(ClientStream::new(client, rx)))
     }
 
     /// Send a message to the CLI.

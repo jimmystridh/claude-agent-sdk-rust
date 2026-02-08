@@ -70,6 +70,8 @@ pub struct Query {
     initialization_result: Arc<RwLock<Option<serde_json::Value>>>,
     /// Timeout for CLI operations in seconds (0 = no timeout).
     timeout_secs: u64,
+    /// Agent definitions to send via initialize request.
+    agents: Option<HashMap<String, serde_json::Value>>,
 }
 
 impl Query {
@@ -77,6 +79,7 @@ impl Query {
     pub fn new(
         transport: SubprocessTransport,
         options: &ClaudeAgentOptions,
+        agents: Option<HashMap<String, serde_json::Value>>,
     ) -> (Self, mpsc::Receiver<Result<Message>>) {
         let (message_tx, message_rx) = mpsc::channel(256);
 
@@ -92,6 +95,7 @@ impl Query {
             shutdown_tx: None,
             initialization_result: Arc::new(RwLock::new(None)),
             timeout_secs: options.timeout_secs.unwrap_or(DEFAULT_TIMEOUT_SECS),
+            agents,
         };
 
         (query, message_rx)
@@ -444,12 +448,15 @@ impl Query {
 
     /// Initialize the streaming session with the CLI.
     pub async fn initialize(&self) -> Result<serde_json::Value> {
-        // Build hooks configuration for initialization
         let hooks_config = self.build_hooks_config().await;
+        let agents_config = self.agents.as_ref().map(|a| {
+            serde_json::to_value(a).unwrap_or(serde_json::Value::Null)
+        });
 
         let result = self
             .send_control_request(ControlRequestPayload::Initialize {
                 hooks: hooks_config,
+                agents: agents_config,
             })
             .await?;
 

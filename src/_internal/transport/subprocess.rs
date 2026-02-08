@@ -52,18 +52,13 @@ pub struct SubprocessTransport {
     stderr_callback: Option<Arc<dyn Fn(String) + Send + Sync>>,
     /// Whether the transport is ready.
     ready: bool,
-    /// Whether we're in streaming mode.
-    streaming_mode: bool,
-    /// Initial prompt for non-streaming mode.
-    #[allow(dead_code)]
-    initial_prompt: Option<String>,
     /// Working directory.
     cwd: Option<PathBuf>,
 }
 
 impl SubprocessTransport {
     /// Create a new subprocess transport with the given options.
-    pub fn new(options: &ClaudeAgentOptions, initial_prompt: Option<String>) -> Result<Self> {
+    pub fn new(options: &ClaudeAgentOptions) -> Result<Self> {
         let cli_path = options
             .cli_path
             .clone()
@@ -80,8 +75,7 @@ impl SubprocessTransport {
             }
         }
 
-        let streaming_mode = initial_prompt.is_none();
-        let args = Self::build_args(options, streaming_mode, initial_prompt.as_deref())?;
+        let args = Self::build_args(options)?;
         let env = Self::build_env(options);
         let max_buffer_size = options.max_buffer_size.unwrap_or(DEFAULT_MAX_BUFFER_SIZE);
 
@@ -95,32 +89,19 @@ impl SubprocessTransport {
             stdout_rx: None,
             stderr_callback: options.stderr.clone(),
             ready: false,
-            streaming_mode,
-            initial_prompt,
             cwd: options.cwd.clone(),
         })
     }
 
     /// Build command-line arguments from options.
-    fn build_args(
-        options: &ClaudeAgentOptions,
-        streaming_mode: bool,
-        initial_prompt: Option<&str>,
-    ) -> Result<Vec<String>> {
-        let mut args = Vec::new();
-
-        // Output format
-        args.push("--output-format".to_string());
-        args.push("stream-json".to_string());
-
-        // Verbose mode for control protocol
-        args.push("--verbose".to_string());
-
-        // Streaming mode input format
-        if streaming_mode {
-            args.push("--input-format".to_string());
-            args.push("stream-json".to_string());
-        }
+    fn build_args(options: &ClaudeAgentOptions) -> Result<Vec<String>> {
+        let mut args = vec![
+            "--output-format".to_string(),
+            "stream-json".to_string(),
+            "--verbose".to_string(),
+            "--input-format".to_string(),
+            "stream-json".to_string(),
+        ];
 
         // System prompt handling:
         // - None: Pass empty string to explicitly disable default system prompt
@@ -315,14 +296,7 @@ impl SubprocessTransport {
             args.push(json);
         }
 
-        // Agents
-        if let Some(ref agents) = options.agents {
-            let json = serde_json::to_string(agents).map_err(|e| {
-                ClaudeSDKError::configuration(format!("Failed to serialize agents: {}", e))
-            })?;
-            args.push("--agents".to_string());
-            args.push(json);
-        }
+        // Agents are sent via the initialize control request, not CLI args
 
         // Beta features
         for beta in &options.betas {
@@ -340,15 +314,6 @@ impl SubprocessTransport {
             args.push(format!("--{}", key));
             if let Some(v) = value {
                 args.push(v.clone());
-            }
-        }
-
-        // Non-streaming mode: add prompt
-        if !streaming_mode {
-            if let Some(prompt) = initial_prompt {
-                args.push("--print".to_string());
-                args.push("--".to_string());
-                args.push(prompt.to_string());
             }
         }
 
@@ -469,17 +434,10 @@ impl Transport for SubprocessTransport {
         let mut cmd = Command::new(&self.cli_path);
         cmd.args(&self.args)
             .envs(&self.env)
+            .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true);
-
-        // In non-streaming mode (using --print), we don't need stdin
-        // Using Stdio::null() allows the CLI to complete without waiting for input
-        if self.streaming_mode {
-            cmd.stdin(Stdio::piped());
-        } else {
-            cmd.stdin(Stdio::null());
-        }
 
         if let Some(ref cwd) = self.cwd {
             cmd.current_dir(cwd);
@@ -500,13 +458,11 @@ impl Transport for SubprocessTransport {
             }
         })?;
 
-        // Take stdin and wrap in mutex (only available in streaming mode)
-        if self.streaming_mode {
-            let stdin = child.stdin.take().ok_or_else(|| {
-                ClaudeSDKError::cli_connection("Failed to open stdin to CLI process")
-            })?;
-            self.stdin = Some(Arc::new(Mutex::new(stdin)));
-        }
+        // Take stdin and wrap in mutex
+        let stdin = child.stdin.take().ok_or_else(|| {
+            ClaudeSDKError::cli_connection("Failed to open stdin to CLI process")
+        })?;
+        self.stdin = Some(Arc::new(Mutex::new(stdin)));
 
         // Take stdout and start reader task
         let stdout = child.stdout.take().ok_or_else(|| {
@@ -615,11 +571,6 @@ impl SubprocessTransport {
     ) -> Option<tokio::sync::mpsc::Receiver<Result<serde_json::Value>>> {
         self.stdout_rx.take()
     }
-
-    /// Check if in streaming mode.
-    pub fn is_streaming_mode(&self) -> bool {
-        self.streaming_mode
-    }
 }
 
 #[cfg(test)]
@@ -629,7 +580,7 @@ mod tests {
     #[test]
     fn test_build_args_basic() {
         let options = ClaudeAgentOptions::default();
-        let args = SubprocessTransport::build_args(&options, true, None).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
         assert!(args.contains(&"--output-format".to_string()));
         assert!(args.contains(&"stream-json".to_string()));
@@ -640,20 +591,20 @@ mod tests {
     #[test]
     fn test_build_args_with_model() {
         let options = ClaudeAgentOptions::new().with_model("claude-3-sonnet");
-        let args = SubprocessTransport::build_args(&options, true, None).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
         assert!(args.contains(&"--model".to_string()));
         assert!(args.contains(&"claude-3-sonnet".to_string()));
     }
 
     #[test]
-    fn test_build_args_non_streaming() {
+    fn test_build_args_always_streaming() {
         let options = ClaudeAgentOptions::default();
-        let args = SubprocessTransport::build_args(&options, false, Some("Hello")).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
-        assert!(args.contains(&"--print".to_string()));
-        assert!(args.contains(&"Hello".to_string()));
-        assert!(!args.contains(&"--input-format".to_string()));
+        assert!(args.contains(&"--input-format".to_string()));
+        assert!(!args.contains(&"--print".to_string()));
+        assert!(!args.contains(&"--agents".to_string()));
     }
 
     #[test]
@@ -671,9 +622,8 @@ mod tests {
 
     #[test]
     fn test_build_args_system_prompt_none() {
-        // When system_prompt is None, should pass empty string to disable default
         let options = ClaudeAgentOptions::default();
-        let args = SubprocessTransport::build_args(&options, true, None).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
         let sp_idx = args.iter().position(|a| a == "--system-prompt");
         assert!(sp_idx.is_some(), "Should have --system-prompt flag");
@@ -686,9 +636,8 @@ mod tests {
 
     #[test]
     fn test_build_args_system_prompt_string() {
-        // When system_prompt is a string, should pass it directly
         let options = ClaudeAgentOptions::new().with_system_prompt("You are a pirate.");
-        let args = SubprocessTransport::build_args(&options, true, None).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
         let sp_idx = args.iter().position(|a| a == "--system-prompt");
         assert!(sp_idx.is_some(), "Should have --system-prompt flag");
@@ -703,52 +652,53 @@ mod tests {
     fn test_build_args_system_prompt_preset_no_append() {
         use crate::types::{SystemPromptConfig, SystemPromptPreset};
 
-        // When system_prompt is a preset without append, should NOT pass any system-prompt flags
         let mut options = ClaudeAgentOptions::new();
         options.system_prompt = Some(SystemPromptConfig::Preset(SystemPromptPreset {
             preset_type: "preset".to_string(),
             preset: "claude_code".to_string(),
             append: None,
         }));
-        let args = SubprocessTransport::build_args(&options, true, None).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
-        assert!(
-            !args.contains(&"--system-prompt".to_string()),
-            "Should NOT have --system-prompt flag for preset"
-        );
-        assert!(
-            !args.contains(&"--append-system-prompt".to_string()),
-            "Should NOT have --append-system-prompt flag without append"
-        );
+        assert!(!args.contains(&"--system-prompt".to_string()));
+        assert!(!args.contains(&"--append-system-prompt".to_string()));
     }
 
     #[test]
     fn test_build_args_system_prompt_preset_with_append() {
         use crate::types::{SystemPromptConfig, SystemPromptPreset};
 
-        // When system_prompt is a preset with append, should only pass --append-system-prompt
         let mut options = ClaudeAgentOptions::new();
         options.system_prompt = Some(SystemPromptConfig::Preset(SystemPromptPreset {
             preset_type: "preset".to_string(),
             preset: "claude_code".to_string(),
             append: Some("Be concise.".to_string()),
         }));
-        let args = SubprocessTransport::build_args(&options, true, None).unwrap();
+        let args = SubprocessTransport::build_args(&options).unwrap();
 
-        assert!(
-            !args.contains(&"--system-prompt".to_string()),
-            "Should NOT have --system-prompt flag for preset"
-        );
+        assert!(!args.contains(&"--system-prompt".to_string()));
 
         let append_idx = args.iter().position(|a| a == "--append-system-prompt");
-        assert!(
-            append_idx.is_some(),
-            "Should have --append-system-prompt flag"
-        );
-        assert_eq!(
-            args[append_idx.unwrap() + 1],
-            "Be concise.",
-            "Append text should match"
-        );
+        assert!(append_idx.is_some());
+        assert_eq!(args[append_idx.unwrap() + 1], "Be concise.");
+    }
+
+    #[test]
+    fn test_build_args_agents_not_in_cli_args() {
+        use crate::types::AgentDefinition;
+
+        let mut options = ClaudeAgentOptions::new();
+        options.agents = Some(std::collections::HashMap::from([(
+            "test_agent".to_string(),
+            AgentDefinition {
+                description: "Test".to_string(),
+                prompt: "Do stuff".to_string(),
+                tools: None,
+                model: None,
+            },
+        )]));
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        assert!(!args.contains(&"--agents".to_string()));
     }
 }
