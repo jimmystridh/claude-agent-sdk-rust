@@ -1,0 +1,23 @@
+.github/workflows/ci.yml
+  0ac597398b66e6e8 144-147,150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "e6b8906ee856e4b00ffeb2a68669d07171aa0bca",
+  "prompts": {
+    "0ac597398b66e6e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "70199c34-eaf3-408b-be2f-fc617d14c158",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Jimmy Stridh <jimmystridh@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 5,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
