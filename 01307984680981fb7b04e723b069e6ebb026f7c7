@@ -1,0 +1,23 @@
+src/_internal/message_parser.rs
+  0ac597398b66e6e8 96,723-767
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "01307984680981fb7b04e723b069e6ebb026f7c7",
+  "prompts": {
+    "0ac597398b66e6e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "70199c34-eaf3-408b-be2f-fc617d14c158",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Jimmy Stridh <jimmystridh@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 47,
+      "total_deletions": 1,
+      "accepted_lines": 47,
+      "overriden_lines": 0
+    }
+  }
+}
