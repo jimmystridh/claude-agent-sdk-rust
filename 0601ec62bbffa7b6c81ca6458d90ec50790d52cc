@@ -1,0 +1,29 @@
+src/_internal/client.rs
+  0ac597398b66e6e8 86-98,107,112-113,133,149-151,153
+src/_internal/transport/subprocess.rs
+  0ac597398b66e6e8 98-104,299,437,601,605-607,679,683-702
+src/types.rs
+  0ac597398b66e6e8 1481-1483
+src/_internal/query.rs
+  0ac597398b66e6e8 73-74,82,98,452-454,459
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "0601ec62bbffa7b6c81ca6458d90ec50790d52cc",
+  "prompts": {
+    "0ac597398b66e6e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "70199c34-eaf3-408b-be2f-fc617d14c158",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Jimmy Stridh <jimmystridh@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 109,
+      "total_deletions": 182,
+      "accepted_lines": 69,
+      "overriden_lines": 0
+    }
+  }
+}
