@@ -82,7 +82,9 @@ impl InternalClient {
     }
 
     /// Convert agent definitions to serializable format for the initialize request.
-    fn build_agents_dict(options: &ClaudeAgentOptions) -> Option<std::collections::HashMap<String, serde_json::Value>> {
+    fn build_agents_dict(
+        options: &ClaudeAgentOptions,
+    ) -> Option<std::collections::HashMap<String, serde_json::Value>> {
         options.agents.as_ref().map(|agents| {
             agents
                 .iter()
@@ -140,8 +142,7 @@ impl InternalClient {
             ));
         }
 
-        let has_hooks_or_callbacks =
-            options.can_use_tool.is_some() || options.hooks.is_some();
+        let has_hooks_or_callbacks = options.can_use_tool.is_some() || options.hooks.is_some();
 
         let mut client = InternalClient::new(options);
         client.connect().await?;

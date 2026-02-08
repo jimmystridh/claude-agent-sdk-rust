@@ -93,17 +93,14 @@ fn parse_assistant_message(raw: serde_json::Value) -> Result<Message> {
         .unwrap_or("unknown")
         .to_string();
 
-    let error = raw
-        .get("error")
-        .and_then(|v| v.as_str())
-        .map(|s| match s {
-            "authentication_failed" => AssistantMessageError::AuthenticationFailed,
-            "billing_error" => AssistantMessageError::BillingError,
-            "rate_limit" => AssistantMessageError::RateLimit,
-            "invalid_request" => AssistantMessageError::InvalidRequest,
-            "server_error" => AssistantMessageError::ServerError,
-            _ => AssistantMessageError::Unknown,
-        });
+    let error = raw.get("error").and_then(|v| v.as_str()).map(|s| match s {
+        "authentication_failed" => AssistantMessageError::AuthenticationFailed,
+        "billing_error" => AssistantMessageError::BillingError,
+        "rate_limit" => AssistantMessageError::RateLimit,
+        "invalid_request" => AssistantMessageError::InvalidRequest,
+        "server_error" => AssistantMessageError::ServerError,
+        _ => AssistantMessageError::Unknown,
+    });
 
     Ok(Message::Assistant(AssistantMessage {
         content,

@@ -468,9 +468,10 @@ impl Query {
     /// Initialize the streaming session with the CLI.
     pub async fn initialize(&self) -> Result<serde_json::Value> {
         let hooks_config = self.build_hooks_config().await;
-        let agents_config = self.agents.as_ref().map(|a| {
-            serde_json::to_value(a).unwrap_or(serde_json::Value::Null)
-        });
+        let agents_config = self
+            .agents
+            .as_ref()
+            .map(|a| serde_json::to_value(a).unwrap_or(serde_json::Value::Null));
 
         let result = self
             .send_control_request(ControlRequestPayload::Initialize {

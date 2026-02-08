@@ -460,9 +460,10 @@ impl Transport for SubprocessTransport {
         })?;
 
         // Take stdin and wrap in mutex
-        let stdin = child.stdin.take().ok_or_else(|| {
-            ClaudeSDKError::cli_connection("Failed to open stdin to CLI process")
-        })?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| ClaudeSDKError::cli_connection("Failed to open stdin to CLI process"))?;
         self.stdin = Some(Arc::new(Mutex::new(Some(stdin))));
 
         // Take stdout and start reader task
