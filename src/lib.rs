@@ -167,7 +167,7 @@ pub use types::*;
 pub mod mcp;
 
 #[cfg(feature = "mcp")]
-pub use mcp::{create_sdk_mcp_server, McpSdkServerConfig, SdkMcpTool};
+pub use mcp::{create_sdk_mcp_server, McpSdkServerConfig, SdkMcpTool, ToolAnnotations};
 
 /// SDK version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
