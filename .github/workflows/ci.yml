@@ -141,12 +141,13 @@ jobs:
           CURRENT_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           echo "current_version=${CURRENT_VERSION}" >> $GITHUB_OUTPUT
 
-          # Check if this version tag already exists
-          if git rev-parse "v${CURRENT_VERSION}" >/dev/null 2>&1; then
-            echo "Version v${CURRENT_VERSION} already released"
+          # Check if this version is already on crates.io
+          PUBLISHED=$(cargo search claude-agents-sdk --limit 1 | sed 's/.*= "\(.*\)".*/\1/' | head -1)
+          if [ "$PUBLISHED" = "$CURRENT_VERSION" ]; then
+            echo "Version v${CURRENT_VERSION} already on crates.io"
             echo "should_publish=false" >> $GITHUB_OUTPUT
           else
-            echo "New version v${CURRENT_VERSION} detected"
+            echo "New version v${CURRENT_VERSION} (crates.io has v${PUBLISHED})"
             echo "should_publish=true" >> $GITHUB_OUTPUT
           fi
 
