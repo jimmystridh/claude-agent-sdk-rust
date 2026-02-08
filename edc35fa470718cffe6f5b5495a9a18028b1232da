@@ -1,0 +1,23 @@
+Cargo.toml
+  0ac597398b66e6e8 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "edc35fa470718cffe6f5b5495a9a18028b1232da",
+  "prompts": {
+    "0ac597398b66e6e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "70199c34-eaf3-408b-be2f-fc617d14c158",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Jimmy Stridh <jimmystridh@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
