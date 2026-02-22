@@ -603,6 +603,79 @@ fn test_mcp_stdio_server_config_serialization() {
     assert_eq!(json["args"][0], "server.js");
 }
 
+#[test]
+fn test_mcp_server_config_no_duplicate_type_key() {
+    // Regression test: internally-tagged enum + struct field both named "type"
+    // used to produce {"type":"stdio","type":"stdio",...} — duplicate keys.
+    let config = McpServerConfig::Stdio(McpStdioServerConfig {
+        server_type: "stdio".to_string(),
+        command: "/usr/bin/my-server".to_string(),
+        args: vec![],
+        env: std::collections::HashMap::new(),
+    });
+
+    let json_str = serde_json::to_string(&config).unwrap();
+    let type_count = json_str.matches(r#""type""#).count();
+    assert_eq!(
+        type_count, 1,
+        "Should have exactly one 'type' key, got {type_count}: {json_str}"
+    );
+}
+
+#[test]
+fn test_mcp_server_config_roundtrip_stdio() {
+    let original = McpServerConfig::Stdio(McpStdioServerConfig {
+        server_type: "stdio".to_string(),
+        command: "node".to_string(),
+        args: vec!["server.js".to_string()],
+        env: std::collections::HashMap::new(),
+    });
+
+    let json = serde_json::to_value(&original).unwrap();
+    let deserialized: McpServerConfig = serde_json::from_value(json).unwrap();
+
+    match deserialized {
+        McpServerConfig::Stdio(s) => {
+            assert_eq!(s.command, "node");
+            assert_eq!(s.args, vec!["server.js"]);
+            assert_eq!(s.server_type, "stdio");
+        }
+        _ => panic!("Expected Stdio variant"),
+    }
+}
+
+#[test]
+fn test_mcp_server_config_no_duplicate_type_key_sse() {
+    let config = McpServerConfig::SSE(McpSSEServerConfig {
+        server_type: "sse".to_string(),
+        url: "http://localhost:3000".to_string(),
+        headers: std::collections::HashMap::new(),
+    });
+
+    let json_str = serde_json::to_string(&config).unwrap();
+    let type_count = json_str.matches(r#""type""#).count();
+    assert_eq!(
+        type_count, 1,
+        "Should have exactly one 'type' key, got {type_count}: {json_str}"
+    );
+}
+
+#[test]
+fn test_mcp_server_config_no_duplicate_type_key_http() {
+    let config = McpServerConfig::Http(McpHttpServerConfig {
+        server_type: "http".to_string(),
+        url: "http://localhost:3000".to_string(),
+        headers: std::collections::HashMap::new(),
+    });
+
+    let json_str = serde_json::to_string(&config).unwrap();
+    let type_count = json_str.matches(r#""type""#).count();
+    assert_eq!(
+        type_count, 1,
+        "Should have exactly one 'type' key, got {type_count}: {json_str}"
+    );
+}
+
 // ============================================================================
 // Agent Definition Tests
 // ============================================================================

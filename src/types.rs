@@ -752,8 +752,9 @@ impl std::fmt::Debug for HookMatcher {
 /// MCP stdio server configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpStdioServerConfig {
-    /// Server type (always "stdio").
-    #[serde(rename = "type", default = "default_stdio")]
+    /// Server type (always "stdio"). Skipped during serialization since the
+    /// enum tag on `McpServerConfig` already produces the `"type"` field.
+    #[serde(rename = "type", default = "default_stdio", skip_serializing)]
     pub server_type: String,
     /// Command to run.
     pub command: String,
@@ -769,11 +770,20 @@ fn default_stdio() -> String {
     "stdio".to_string()
 }
 
+fn default_sse() -> String {
+    "sse".to_string()
+}
+
+fn default_http() -> String {
+    "http".to_string()
+}
+
 /// MCP SSE server configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpSSEServerConfig {
-    /// Server type (always "sse").
-    #[serde(rename = "type")]
+    /// Server type (always "sse"). Skipped during serialization since the
+    /// enum tag on `McpServerConfig` already produces the `"type"` field.
+    #[serde(rename = "type", default = "default_sse", skip_serializing)]
     pub server_type: String,
     /// Server URL.
     pub url: String,
@@ -785,8 +795,9 @@ pub struct McpSSEServerConfig {
 /// MCP HTTP server configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpHttpServerConfig {
-    /// Server type (always "http").
-    #[serde(rename = "type")]
+    /// Server type (always "http"). Skipped during serialization since the
+    /// enum tag on `McpServerConfig` already produces the `"type"` field.
+    #[serde(rename = "type", default = "default_http", skip_serializing)]
     pub server_type: String,
     /// Server URL.
     pub url: String,
