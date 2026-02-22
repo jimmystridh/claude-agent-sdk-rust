@@ -1275,6 +1275,46 @@ impl Default for McpServersConfig {
     }
 }
 
+/// Configuration for extended thinking behavior.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ThinkingConfig {
+    /// Adaptive thinking — automatically determines thinking depth.
+    Adaptive,
+    /// Enabled with a specific token budget.
+    Enabled {
+        /// Maximum number of tokens for thinking.
+        budget_tokens: u32,
+    },
+    /// Thinking disabled.
+    Disabled,
+}
+
+/// Effort level for thinking depth.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Effort {
+    /// Low effort — minimal thinking.
+    Low,
+    /// Medium effort — moderate thinking.
+    Medium,
+    /// High effort — thorough thinking.
+    High,
+    /// Max effort — maximum thinking depth.
+    Max,
+}
+
+impl std::fmt::Display for Effort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Low => write!(f, "low"),
+            Self::Medium => write!(f, "medium"),
+            Self::High => write!(f, "high"),
+            Self::Max => write!(f, "max"),
+        }
+    }
+}
+
 /// Query options for Claude SDK.
 #[derive(Clone, Default)]
 pub struct ClaudeAgentOptions {
@@ -1340,8 +1380,12 @@ pub struct ClaudeAgentOptions {
     pub sandbox: Option<SandboxSettings>,
     /// Plugin configurations.
     pub plugins: Vec<SdkPluginConfig>,
-    /// Maximum thinking tokens.
+    /// Maximum thinking tokens. Deprecated: use `thinking` instead.
     pub max_thinking_tokens: Option<u32>,
+    /// Controls extended thinking behavior. Takes precedence over `max_thinking_tokens`.
+    pub thinking: Option<ThinkingConfig>,
+    /// Effort level for thinking depth.
+    pub effort: Option<Effort>,
     /// Output format for structured outputs.
     pub output_format: Option<serde_json::Value>,
     /// Enable file checkpointing.
@@ -1422,6 +1466,18 @@ impl ClaudeAgentOptions {
     /// Enable partial message streaming.
     pub fn with_partial_messages(mut self) -> Self {
         self.include_partial_messages = true;
+        self
+    }
+
+    /// Set thinking configuration. Takes precedence over `max_thinking_tokens`.
+    pub fn with_thinking(mut self, thinking: ThinkingConfig) -> Self {
+        self.thinking = Some(thinking);
+        self
+    }
+
+    /// Set effort level for thinking depth.
+    pub fn with_effort(mut self, effort: Effort) -> Self {
+        self.effort = Some(effort);
         self
     }
 

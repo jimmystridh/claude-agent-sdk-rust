@@ -167,10 +167,33 @@ impl SubprocessTransport {
             args.push(budget.to_string());
         }
 
-        // Max thinking tokens
-        if let Some(tokens) = options.max_thinking_tokens {
+        // Resolve thinking config → --max-thinking-tokens
+        // `thinking` takes precedence over the deprecated `max_thinking_tokens`
+        let mut resolved_max_thinking_tokens = options.max_thinking_tokens;
+        if let Some(ref thinking) = options.thinking {
+            match thinking {
+                crate::types::ThinkingConfig::Adaptive => {
+                    if resolved_max_thinking_tokens.is_none() {
+                        resolved_max_thinking_tokens = Some(32_000);
+                    }
+                }
+                crate::types::ThinkingConfig::Enabled { budget_tokens } => {
+                    resolved_max_thinking_tokens = Some(*budget_tokens);
+                }
+                crate::types::ThinkingConfig::Disabled => {
+                    resolved_max_thinking_tokens = Some(0);
+                }
+            }
+        }
+        if let Some(tokens) = resolved_max_thinking_tokens {
             args.push("--max-thinking-tokens".to_string());
             args.push(tokens.to_string());
+        }
+
+        // Effort level
+        if let Some(ref effort) = options.effort {
+            args.push("--effort".to_string());
+            args.push(effort.to_string());
         }
 
         // Continue conversation
@@ -707,5 +730,143 @@ mod tests {
         let args = SubprocessTransport::build_args(&options).unwrap();
 
         assert!(!args.contains(&"--agents".to_string()));
+    }
+
+    // ====================================================================
+    // ThinkingConfig → CLI args tests
+    // ====================================================================
+
+    #[test]
+    fn test_build_args_thinking_adaptive_default() {
+        let options =
+            ClaudeAgentOptions::new().with_thinking(crate::types::ThinkingConfig::Adaptive);
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        let idx = args
+            .iter()
+            .position(|a| a == "--max-thinking-tokens")
+            .expect("Should have --max-thinking-tokens");
+        assert_eq!(args[idx + 1], "32000");
+    }
+
+    #[test]
+    fn test_build_args_thinking_adaptive_preserves_explicit_tokens() {
+        let mut options =
+            ClaudeAgentOptions::new().with_thinking(crate::types::ThinkingConfig::Adaptive);
+        options.max_thinking_tokens = Some(16000);
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        let idx = args
+            .iter()
+            .position(|a| a == "--max-thinking-tokens")
+            .expect("Should have --max-thinking-tokens");
+        assert_eq!(
+            args[idx + 1],
+            "16000",
+            "Adaptive should preserve explicit max_thinking_tokens"
+        );
+    }
+
+    #[test]
+    fn test_build_args_thinking_enabled_overrides_tokens() {
+        let mut options =
+            ClaudeAgentOptions::new().with_thinking(crate::types::ThinkingConfig::Enabled {
+                budget_tokens: 50000,
+            });
+        options.max_thinking_tokens = Some(16000);
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        let idx = args
+            .iter()
+            .position(|a| a == "--max-thinking-tokens")
+            .expect("Should have --max-thinking-tokens");
+        assert_eq!(
+            args[idx + 1],
+            "50000",
+            "Enabled should override max_thinking_tokens"
+        );
+    }
+
+    #[test]
+    fn test_build_args_thinking_disabled() {
+        let options =
+            ClaudeAgentOptions::new().with_thinking(crate::types::ThinkingConfig::Disabled);
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        let idx = args
+            .iter()
+            .position(|a| a == "--max-thinking-tokens")
+            .expect("Should have --max-thinking-tokens");
+        assert_eq!(args[idx + 1], "0", "Disabled should set tokens to 0");
+    }
+
+    #[test]
+    fn test_build_args_legacy_max_thinking_tokens() {
+        let mut options = ClaudeAgentOptions::new();
+        options.max_thinking_tokens = Some(8000);
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        let idx = args
+            .iter()
+            .position(|a| a == "--max-thinking-tokens")
+            .expect("Should have --max-thinking-tokens");
+        assert_eq!(args[idx + 1], "8000");
+    }
+
+    #[test]
+    fn test_build_args_no_thinking_no_tokens() {
+        let options = ClaudeAgentOptions::new();
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        assert!(
+            !args.contains(&"--max-thinking-tokens".to_string()),
+            "Should not have --max-thinking-tokens when neither thinking nor max_thinking_tokens set"
+        );
+    }
+
+    // ====================================================================
+    // Effort → CLI args tests
+    // ====================================================================
+
+    #[test]
+    fn test_build_args_effort() {
+        let options = ClaudeAgentOptions::new().with_effort(crate::types::Effort::High);
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        let idx = args
+            .iter()
+            .position(|a| a == "--effort")
+            .expect("Should have --effort flag");
+        assert_eq!(args[idx + 1], "high");
+    }
+
+    #[test]
+    fn test_build_args_effort_all_variants() {
+        for (effort, expected) in [
+            (crate::types::Effort::Low, "low"),
+            (crate::types::Effort::Medium, "medium"),
+            (crate::types::Effort::High, "high"),
+            (crate::types::Effort::Max, "max"),
+        ] {
+            let options = ClaudeAgentOptions::new().with_effort(effort);
+            let args = SubprocessTransport::build_args(&options).unwrap();
+
+            let idx = args
+                .iter()
+                .position(|a| a == "--effort")
+                .expect("Should have --effort flag");
+            assert_eq!(args[idx + 1], expected);
+        }
+    }
+
+    #[test]
+    fn test_build_args_no_effort() {
+        let options = ClaudeAgentOptions::new();
+        let args = SubprocessTransport::build_args(&options).unwrap();
+
+        assert!(
+            !args.contains(&"--effort".to_string()),
+            "Should not have --effort when not set"
+        );
     }
 }

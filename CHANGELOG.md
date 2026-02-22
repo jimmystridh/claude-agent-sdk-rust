@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-02-22
+
+### Added
+
+- `ThinkingConfig` enum (`Adaptive`, `Enabled { budget_tokens }`, `Disabled`) for controlling extended thinking behavior
+- `Effort` enum (`Low`, `Medium`, `High`, `Max`) for controlling thinking depth
+- `thinking` and `effort` fields on `ClaudeAgentOptions` with builder methods `with_thinking()` and `with_effort()`
+- `thinking` field takes precedence over the now-deprecated `max_thinking_tokens`
+
+### Changed
+
+- Unknown message types from the CLI are now silently skipped instead of causing errors, improving forward-compatibility with newer CLI versions
+- Unknown content block types are similarly skipped rather than erroring
+- `parse_message()` return type changed from `Result<Message>` to `Result<Option<Message>>`
+
+### Deprecated
+
+- `max_thinking_tokens` field on `ClaudeAgentOptions` — use `thinking` instead
+
 ## [0.1.3] - 2026-01-03
 
 ### Added
@@ -75,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Builder pattern for `ClaudeAgentOptions`
 - Support for all Claude CLI options (model, system prompt, permissions, etc.)
 
-[Unreleased]: https://github.com/jimmystridh/claude-agents-sdk/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/jimmystridh/claude-agents-sdk/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/jimmystridh/claude-agents-sdk/compare/v0.1.3...v0.1.6
 [0.1.3]: https://github.com/jimmystridh/claude-agents-sdk/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/jimmystridh/claude-agents-sdk/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/jimmystridh/claude-agents-sdk/compare/v0.1.0...v0.1.1

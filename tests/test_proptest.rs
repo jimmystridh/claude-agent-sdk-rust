@@ -45,7 +45,7 @@ proptest! {
         let result = parse_message(raw);
         prop_assert!(result.is_ok(), "Failed to parse user message: {:?}", result);
 
-        if let Ok(Message::User(user)) = result {
+        if let Ok(Some(Message::User(user))) = result {
             prop_assert_eq!(user.text(), Some(text.as_str()));
         }
     }
@@ -65,7 +65,7 @@ proptest! {
         let result = parse_message(raw);
         prop_assert!(result.is_ok(), "Failed to parse assistant message: {:?}", result);
 
-        if let Ok(Message::Assistant(asst)) = result {
+        if let Ok(Some(Message::Assistant(asst))) = result {
             prop_assert!(!asst.content.is_empty());
         }
     }
@@ -93,7 +93,7 @@ proptest! {
         let result = parse_message(raw);
         prop_assert!(result.is_ok(), "Failed to parse tool use: {:?}", result);
 
-        if let Ok(Message::Assistant(asst)) = result {
+        if let Ok(Some(Message::Assistant(asst))) = result {
             if let Some(ContentBlock::ToolUse(tool)) = asst.content.first() {
                 prop_assert_eq!(&tool.name, &tool_name);
                 prop_assert_eq!(&tool.id, &tool_id);
@@ -121,7 +121,7 @@ proptest! {
         let result = parse_message(raw);
         prop_assert!(result.is_ok(), "Failed to parse result: {:?}", result);
 
-        if let Ok(Message::Result(res)) = result {
+        if let Ok(Some(Message::Result(res))) = result {
             prop_assert_eq!(&res.session_id, &session_id);
             prop_assert_eq!(res.num_turns, num_turns);
             prop_assert_eq!(res.duration_ms, duration_ms);
@@ -140,7 +140,7 @@ proptest! {
         let result = parse_message(raw);
         prop_assert!(result.is_ok(), "Failed to parse system message: {:?}", result);
 
-        if let Ok(Message::System(sys)) = result {
+        if let Ok(Some(Message::System(sys))) = result {
             prop_assert_eq!(&sys.subtype, &subtype);
         }
     }
@@ -257,11 +257,11 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// Unknown message types should return an error, not panic.
+    /// Unknown message types should return Ok(None), not panic.
     #[test]
     fn prop_unknown_type_no_panic(unknown_type in "[a-z]{1,20}") {
         // Skip known types
-        if ["user", "assistant", "result", "system"].contains(&unknown_type.as_str()) {
+        if ["user", "assistant", "result", "system", "stream_event"].contains(&unknown_type.as_str()) {
             return Ok(());
         }
 
@@ -271,8 +271,9 @@ proptest! {
         });
 
         let result = parse_message(raw);
-        // Should either parse or return error, never panic
-        prop_assert!(result.is_ok() || result.is_err());
+        // Unknown types should return Ok(None)
+        prop_assert!(result.is_ok(), "Unknown type should not error: {:?}", result);
+        prop_assert!(result.unwrap().is_none(), "Unknown type should return None");
     }
 
     /// Malformed JSON should not panic.

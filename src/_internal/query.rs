@@ -204,11 +204,14 @@ impl Query {
 
                                 debug!("Routing regular message of type: {}", msg_type);
                                 match parse_message(raw) {
-                                    Ok(msg) => {
+                                    Ok(Some(msg)) => {
                                         if message_tx.send(Ok(msg)).await.is_err() {
                                             debug!("Message receiver dropped");
                                             break;
                                         }
+                                    }
+                                    Ok(None) => {
+                                        // Unknown message type — skip gracefully
                                     }
                                     Err(e) => {
                                         warn!("Failed to parse message: {}", e);

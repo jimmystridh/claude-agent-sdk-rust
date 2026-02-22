@@ -4,10 +4,10 @@
 //! and message type discrimination tests.
 
 use claude_agents_sdk::{
-    AgentDefinition, AssistantMessage, ClaudeAgentOptions, ContentBlock, McpServerConfig,
+    AgentDefinition, AssistantMessage, ClaudeAgentOptions, ContentBlock, Effort, McpServerConfig,
     McpServersConfig, McpStdioServerConfig, Message, PermissionMode, ResultMessage,
     SandboxNetworkConfig, SandboxSettings, SettingSource, SystemPromptConfig, SystemPromptPreset,
-    TextBlock, ToolsConfig, ToolsPreset,
+    TextBlock, ThinkingConfig, ToolsConfig, ToolsPreset,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -801,4 +801,54 @@ fn test_overlapping_allowed_and_disallowed_tools() {
     // Both can be set - validation would happen at a higher level
     assert!(options.allowed_tools.contains(&"Bash".to_string()));
     assert!(options.disallowed_tools.contains(&"Bash".to_string()));
+}
+
+// ============================================================================
+// ThinkingConfig and Effort Builder Tests
+// ============================================================================
+
+#[test]
+fn test_thinking_config_adaptive_builder() {
+    let options = ClaudeAgentOptions::new().with_thinking(ThinkingConfig::Adaptive);
+    assert!(matches!(options.thinking, Some(ThinkingConfig::Adaptive)));
+}
+
+#[test]
+fn test_thinking_config_enabled_builder() {
+    let options = ClaudeAgentOptions::new().with_thinking(ThinkingConfig::Enabled {
+        budget_tokens: 50000,
+    });
+    match options.thinking {
+        Some(ThinkingConfig::Enabled { budget_tokens }) => assert_eq!(budget_tokens, 50000),
+        _ => panic!("Expected Enabled variant"),
+    }
+}
+
+#[test]
+fn test_thinking_config_disabled_builder() {
+    let options = ClaudeAgentOptions::new().with_thinking(ThinkingConfig::Disabled);
+    assert!(matches!(options.thinking, Some(ThinkingConfig::Disabled)));
+}
+
+#[test]
+fn test_effort_builder() {
+    let options = ClaudeAgentOptions::new().with_effort(Effort::High);
+    assert_eq!(options.effort, Some(Effort::High));
+}
+
+#[test]
+fn test_effort_builder_all_variants() {
+    for effort in [Effort::Low, Effort::Medium, Effort::High, Effort::Max] {
+        let options = ClaudeAgentOptions::new().with_effort(effort);
+        assert_eq!(options.effort, Some(effort));
+    }
+}
+
+#[test]
+fn test_thinking_and_effort_combined() {
+    let options = ClaudeAgentOptions::new()
+        .with_thinking(ThinkingConfig::Adaptive)
+        .with_effort(Effort::High);
+    assert!(matches!(options.thinking, Some(ThinkingConfig::Adaptive)));
+    assert_eq!(options.effort, Some(Effort::High));
 }

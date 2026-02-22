@@ -5,26 +5,27 @@
 
 use crate::errors::{ClaudeSDKError, Result};
 use crate::types::*;
+use tracing::debug;
 
 /// Parse a raw JSON value into a typed Message.
 ///
 /// This function handles the discriminated union parsing for all message types,
 /// including nested content blocks.
-pub fn parse_message(raw: serde_json::Value) -> Result<Message> {
+pub fn parse_message(raw: serde_json::Value) -> Result<Option<Message>> {
     let msg_type = raw.get("type").and_then(|v| v.as_str()).ok_or_else(|| {
         ClaudeSDKError::message_parse_with_raw("Message missing 'type' field", raw.clone())
     })?;
 
     match msg_type {
-        "user" => parse_user_message(raw),
-        "assistant" => parse_assistant_message(raw),
-        "system" => parse_system_message(raw),
-        "result" => parse_result_message(raw),
-        "stream_event" => parse_stream_event(raw),
-        other => Err(ClaudeSDKError::message_parse_with_raw(
-            format!("Unknown message type: {}", other),
-            raw,
-        )),
+        "user" => parse_user_message(raw).map(Some),
+        "assistant" => parse_assistant_message(raw).map(Some),
+        "system" => parse_system_message(raw).map(Some),
+        "result" => parse_result_message(raw).map(Some),
+        "stream_event" => parse_stream_event(raw).map(Some),
+        other => {
+            debug!("Skipping unknown message type: {}", other);
+            Ok(None)
+        }
     }
 }
 
@@ -221,13 +222,16 @@ fn parse_stream_event(raw: serde_json::Value) -> Result<Message> {
     }))
 }
 
-/// Parse content blocks from a JSON array.
+/// Parse content blocks from a JSON array, skipping unknown block types.
 fn parse_content_blocks(blocks: &[serde_json::Value]) -> Result<Vec<ContentBlock>> {
-    blocks.iter().map(parse_content_block).collect()
+    blocks
+        .iter()
+        .filter_map(|block| parse_content_block(block).transpose())
+        .collect()
 }
 
-/// Parse a single content block.
-fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
+/// Parse a single content block. Returns `Ok(None)` for unknown block types.
+fn parse_content_block(raw: &serde_json::Value) -> Result<Option<ContentBlock>> {
     let block_type = raw.get("type").and_then(|v| v.as_str()).ok_or_else(|| {
         ClaudeSDKError::message_parse_with_raw("Content block missing 'type' field", raw.clone())
     })?;
@@ -239,7 +243,7 @@ fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string();
-            Ok(ContentBlock::Text(TextBlock { text }))
+            Ok(Some(ContentBlock::Text(TextBlock { text })))
         }
         "thinking" => {
             let thinking = raw
@@ -252,10 +256,10 @@ fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string();
-            Ok(ContentBlock::Thinking(ThinkingBlock {
+            Ok(Some(ContentBlock::Thinking(ThinkingBlock {
                 thinking,
                 signature,
-            }))
+            })))
         }
         "tool_use" => {
             let id = raw
@@ -269,7 +273,11 @@ fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
                 .unwrap_or("")
                 .to_string();
             let input = raw.get("input").cloned().unwrap_or(serde_json::Value::Null);
-            Ok(ContentBlock::ToolUse(ToolUseBlock { id, name, input }))
+            Ok(Some(ContentBlock::ToolUse(ToolUseBlock {
+                id,
+                name,
+                input,
+            })))
         }
         "tool_result" => {
             let tool_use_id = raw
@@ -279,16 +287,16 @@ fn parse_content_block(raw: &serde_json::Value) -> Result<ContentBlock> {
                 .to_string();
             let content = raw.get("content").cloned();
             let is_error = raw.get("is_error").and_then(|v| v.as_bool());
-            Ok(ContentBlock::ToolResult(ToolResultBlock {
+            Ok(Some(ContentBlock::ToolResult(ToolResultBlock {
                 tool_use_id,
                 content,
                 is_error,
-            }))
+            })))
         }
-        other => Err(ClaudeSDKError::message_parse_with_raw(
-            format!("Unknown content block type: {}", other),
-            raw.clone(),
-        )),
+        other => {
+            debug!("Skipping unknown content block type: {}", other);
+            Ok(None)
+        }
     }
 }
 
@@ -341,7 +349,7 @@ mod tests {
             }
         });
 
-        let msg = parse_message(raw).unwrap();
+        let msg = parse_message(raw).unwrap().unwrap();
         match msg {
             Message::User(user) => {
                 assert_eq!(user.text(), Some("Hello, Claude!"));
@@ -362,7 +370,7 @@ mod tests {
             }
         });
 
-        let msg = parse_message(raw).unwrap();
+        let msg = parse_message(raw).unwrap().unwrap();
         match msg {
             Message::Assistant(asst) => {
                 assert_eq!(asst.model, "claude-3-sonnet");
@@ -389,7 +397,7 @@ mod tests {
             }
         });
 
-        let msg = parse_message(raw).unwrap();
+        let msg = parse_message(raw).unwrap().unwrap();
         match msg {
             Message::Assistant(asst) => {
                 assert_eq!(asst.tool_uses().len(), 1);
@@ -412,7 +420,7 @@ mod tests {
             "total_cost_usd": 0.05
         });
 
-        let msg = parse_message(raw).unwrap();
+        let msg = parse_message(raw).unwrap().unwrap();
         match msg {
             Message::Result(result) => {
                 assert_eq!(result.duration_ms, 1000);
@@ -461,14 +469,18 @@ mod tests {
         let raw = serde_json::json!({
             "type": "unknown_message_type"
         });
-        let result = parse_message(raw);
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(
-            err.to_string().contains("Unknown message type"),
-            "Error should mention unknown type: {}",
-            err
-        );
+        let result = parse_message(raw).unwrap();
+        assert!(result.is_none(), "Unknown message type should return None");
+    }
+
+    #[test]
+    fn test_parse_message_rate_limit_event() {
+        let raw = serde_json::json!({
+            "type": "rate_limit_event",
+            "data": {"remaining": 10}
+        });
+        let result = parse_message(raw).unwrap();
+        assert!(result.is_none(), "rate_limit_event should be skipped");
     }
 
     #[test]
@@ -601,19 +613,21 @@ mod tests {
             "type": "assistant",
             "message": {
                 "content": [
-                    {"type": "unknown_block_type"}
+                    {"type": "unknown_block_type"},
+                    {"type": "text", "text": "Hello"}
                 ],
                 "model": "claude-3"
             }
         });
-        let result = parse_message(raw);
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(
-            err.to_string().contains("Unknown content block type"),
-            "Error should mention unknown block type: {}",
-            err
-        );
+        let msg = parse_message(raw).unwrap().unwrap();
+        match msg {
+            Message::Assistant(asst) => {
+                // Unknown block type is skipped, only the text block remains
+                assert_eq!(asst.content.len(), 1);
+                assert_eq!(asst.text(), "Hello");
+            }
+            _ => panic!("Expected assistant message"),
+        }
     }
 
     #[test]
@@ -627,9 +641,8 @@ mod tests {
                 ]
             }
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::User(user) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::User(user) = msg {
             if let UserMessageContent::Blocks(blocks) = user.content {
                 assert_eq!(blocks.len(), 2);
             } else {
@@ -646,9 +659,8 @@ mod tests {
         let raw = serde_json::json!({
             "type": "result"
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::Result(r) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::Result(r) = msg {
             assert_eq!(r.subtype, "success");
             assert_eq!(r.duration_ms, 0);
             assert!(!r.is_error);
@@ -670,9 +682,8 @@ mod tests {
             "sessionId": "sess_abc",
             "totalCostUsd": 0.01
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::Result(r) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::Result(r) = msg {
             assert_eq!(r.duration_ms, 1000);
             assert_eq!(r.duration_api_ms, 500);
             assert_eq!(r.num_turns, 2);
@@ -688,9 +699,8 @@ mod tests {
         let raw = serde_json::json!({
             "type": "system"
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::System(s) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::System(s) = msg {
             assert_eq!(s.subtype, "unknown");
             assert!(s.data.is_null());
         } else {
@@ -706,9 +716,8 @@ mod tests {
             "session_id": "sess_456",
             "event": {"delta": "text chunk"}
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::StreamEvent(e) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::StreamEvent(e) = msg {
             assert_eq!(e.uuid, "uuid_123");
             assert_eq!(e.session_id, "sess_456");
         } else {
@@ -730,7 +739,7 @@ mod tests {
             }
         });
 
-        let msg = parse_message(raw).unwrap();
+        let msg = parse_message(raw).unwrap().unwrap();
         match msg {
             Message::Assistant(asst) => {
                 assert_eq!(asst.error, Some(AssistantMessageError::RateLimit));
@@ -753,7 +762,7 @@ mod tests {
             }
         });
 
-        let msg = parse_message(raw).unwrap();
+        let msg = parse_message(raw).unwrap().unwrap();
         match msg {
             Message::Assistant(asst) => {
                 assert!(asst.error.is_none());
@@ -777,9 +786,8 @@ mod tests {
                 "model": "claude-3"
             }
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::Assistant(asst) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::Assistant(asst) = msg {
             assert_eq!(asst.content.len(), 1);
             if let ContentBlock::Thinking(t) = &asst.content[0] {
                 assert_eq!(t.thinking, "Let me think about this...");
@@ -807,9 +815,8 @@ mod tests {
                 ]
             }
         });
-        let result = parse_message(raw);
-        assert!(result.is_ok());
-        if let Message::User(user) = result.unwrap() {
+        let msg = parse_message(raw).unwrap().unwrap();
+        if let Message::User(user) = msg {
             if let UserMessageContent::Blocks(blocks) = user.content {
                 if let ContentBlock::ToolResult(tr) = &blocks[0] {
                     assert_eq!(tr.tool_use_id, "tool_abc");

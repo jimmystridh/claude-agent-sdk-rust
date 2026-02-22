@@ -815,3 +815,102 @@ fn test_sync_hook_output_roundtrip() {
     assert_eq!(deserialized.decision, original.decision);
     assert_eq!(deserialized.reason, original.reason);
 }
+
+// ============================================================================
+// ThinkingConfig Tests
+// ============================================================================
+
+#[test]
+fn test_thinking_config_adaptive_serialization() {
+    let config = ThinkingConfig::Adaptive;
+    let json = serde_json::to_value(&config).unwrap();
+    assert_eq!(json, json!({"type": "adaptive"}));
+}
+
+#[test]
+fn test_thinking_config_enabled_serialization() {
+    let config = ThinkingConfig::Enabled {
+        budget_tokens: 16000,
+    };
+    let json = serde_json::to_value(&config).unwrap();
+    assert_eq!(json, json!({"type": "enabled", "budget_tokens": 16000}));
+}
+
+#[test]
+fn test_thinking_config_disabled_serialization() {
+    let config = ThinkingConfig::Disabled;
+    let json = serde_json::to_value(&config).unwrap();
+    assert_eq!(json, json!({"type": "disabled"}));
+}
+
+#[test]
+fn test_thinking_config_adaptive_roundtrip() {
+    let original = ThinkingConfig::Adaptive;
+    let json = serde_json::to_value(&original).unwrap();
+    let deserialized: ThinkingConfig = serde_json::from_value(json).unwrap();
+    assert!(matches!(deserialized, ThinkingConfig::Adaptive));
+}
+
+#[test]
+fn test_thinking_config_enabled_roundtrip() {
+    let original = ThinkingConfig::Enabled {
+        budget_tokens: 50000,
+    };
+    let json = serde_json::to_value(&original).unwrap();
+    let deserialized: ThinkingConfig = serde_json::from_value(json).unwrap();
+    match deserialized {
+        ThinkingConfig::Enabled { budget_tokens } => assert_eq!(budget_tokens, 50000),
+        _ => panic!("Expected Enabled variant"),
+    }
+}
+
+#[test]
+fn test_thinking_config_disabled_roundtrip() {
+    let original = ThinkingConfig::Disabled;
+    let json = serde_json::to_value(&original).unwrap();
+    let deserialized: ThinkingConfig = serde_json::from_value(json).unwrap();
+    assert!(matches!(deserialized, ThinkingConfig::Disabled));
+}
+
+// ============================================================================
+// Effort Tests
+// ============================================================================
+
+#[test]
+fn test_effort_serialization() {
+    assert_eq!(serde_json::to_string(&Effort::Low).unwrap(), r#""low""#);
+    assert_eq!(
+        serde_json::to_string(&Effort::Medium).unwrap(),
+        r#""medium""#
+    );
+    assert_eq!(serde_json::to_string(&Effort::High).unwrap(), r#""high""#);
+    assert_eq!(serde_json::to_string(&Effort::Max).unwrap(), r#""max""#);
+}
+
+#[test]
+fn test_effort_deserialization() {
+    assert_eq!(
+        serde_json::from_str::<Effort>(r#""low""#).unwrap(),
+        Effort::Low
+    );
+    assert_eq!(
+        serde_json::from_str::<Effort>(r#""medium""#).unwrap(),
+        Effort::Medium
+    );
+    assert_eq!(
+        serde_json::from_str::<Effort>(r#""high""#).unwrap(),
+        Effort::High
+    );
+    assert_eq!(
+        serde_json::from_str::<Effort>(r#""max""#).unwrap(),
+        Effort::Max
+    );
+}
+
+#[test]
+fn test_effort_display() {
+    assert_eq!(Effort::Low.to_string(), "low");
+    assert_eq!(Effort::Medium.to_string(), "medium");
+    assert_eq!(Effort::High.to_string(), "high");
+    assert_eq!(Effort::Max.to_string(), "max");
+}

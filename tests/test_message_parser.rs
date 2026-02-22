@@ -13,7 +13,7 @@ fn test_parse_user_message_text() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::User(user) => {
             assert_eq!(user.text(), Some("Hello, Claude!"));
@@ -32,7 +32,7 @@ fn test_parse_user_message_with_uuid() {
         "uuid": "user_123"
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::User(user) => {
             assert_eq!(user.uuid, Some("user_123".to_string()));
@@ -53,7 +53,7 @@ fn test_parse_user_message_with_content_blocks() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::User(user) => match &user.content {
             UserMessageContent::Blocks(blocks) => {
@@ -77,7 +77,7 @@ fn test_parse_assistant_message_text() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Assistant(asst) => {
             assert_eq!(asst.text(), "Hello, I'm Claude!");
@@ -105,7 +105,7 @@ fn test_parse_assistant_message_with_tool_use() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Assistant(asst) => {
             assert_eq!(asst.content.len(), 2);
@@ -135,7 +135,7 @@ fn test_parse_assistant_message_with_thinking() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Assistant(asst) => {
             assert_eq!(asst.content.len(), 2);
@@ -162,7 +162,7 @@ fn test_parse_assistant_message_with_error() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Assistant(asst) => {
             assert_eq!(asst.error, Some(AssistantMessageError::RateLimit));
@@ -179,7 +179,7 @@ fn test_parse_system_message() {
         "data": {"session_id": "sess_123"}
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::System(sys) => {
             assert_eq!(sys.subtype, "init");
@@ -207,7 +207,7 @@ fn test_parse_result_message() {
         "result": "Task completed successfully"
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Result(result) => {
             assert_eq!(result.subtype, "success");
@@ -241,7 +241,7 @@ fn test_parse_result_message_camel_case() {
         "totalCostUsd": 0.01
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Result(result) => {
             assert_eq!(result.duration_ms, 1000);
@@ -267,7 +267,7 @@ fn test_parse_stream_event() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::StreamEvent(evt) => {
             assert_eq!(evt.uuid, "evt_123");
@@ -295,7 +295,7 @@ fn test_parse_tool_result_block() {
         }
     });
 
-    let msg = parse_message(raw).unwrap();
+    let msg = parse_message(raw).unwrap().unwrap();
     match msg {
         Message::Assistant(asst) => match &asst.content[0] {
             ContentBlock::ToolResult(result) => {
@@ -315,8 +315,8 @@ fn test_parse_unknown_message_type() {
         "data": {}
     });
 
-    let result = parse_message(raw);
-    assert!(result.is_err());
+    let result = parse_message(raw).unwrap();
+    assert!(result.is_none(), "Unknown message type should return None");
 }
 
 #[test]
@@ -421,4 +421,77 @@ fn test_parse_control_response_error() {
     let response = parse_control_response(raw).unwrap();
     assert!(!response.is_success());
     assert_eq!(response.error(), Some("Tool not found"));
+}
+
+// ============================================================================
+// Unknown/Forward-Compatibility Tests
+// ============================================================================
+
+#[test]
+fn test_parse_rate_limit_event_skipped() {
+    let raw = json!({
+        "type": "rate_limit_event",
+        "data": {"remaining": 10, "reset_at": "2026-01-01T00:00:00Z"}
+    });
+
+    let result = parse_message(raw).unwrap();
+    assert!(result.is_none(), "rate_limit_event should be skipped");
+}
+
+#[test]
+fn test_parse_unknown_content_block_skipped() {
+    let raw = json!({
+        "type": "assistant",
+        "message": {
+            "content": [
+                {"type": "server_tool_use", "id": "st_1", "name": "web_search"},
+                {"type": "text", "text": "Here are the results."}
+            ],
+            "model": "claude-3"
+        }
+    });
+
+    let msg = parse_message(raw).unwrap().unwrap();
+    match msg {
+        Message::Assistant(asst) => {
+            assert_eq!(
+                asst.content.len(),
+                1,
+                "Unknown block should be filtered out"
+            );
+            assert_eq!(asst.text(), "Here are the results.");
+        }
+        _ => panic!("Expected assistant message"),
+    }
+}
+
+#[test]
+fn test_parse_mixed_known_and_unknown_content_blocks() {
+    let raw = json!({
+        "type": "assistant",
+        "message": {
+            "content": [
+                {"type": "future_block_type"},
+                {"type": "text", "text": "First"},
+                {"type": "another_new_type", "data": {}},
+                {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "ls"}},
+                {"type": "yet_another_type"}
+            ],
+            "model": "claude-3"
+        }
+    });
+
+    let msg = parse_message(raw).unwrap().unwrap();
+    match msg {
+        Message::Assistant(asst) => {
+            assert_eq!(
+                asst.content.len(),
+                2,
+                "Only known blocks (text + tool_use) should survive"
+            );
+            assert!(matches!(&asst.content[0], ContentBlock::Text(_)));
+            assert!(matches!(&asst.content[1], ContentBlock::ToolUse(_)));
+        }
+        _ => panic!("Expected assistant message"),
+    }
 }
