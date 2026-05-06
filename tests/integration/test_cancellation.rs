@@ -182,7 +182,7 @@ async fn test_tokio_select_cancellation() {
     // Use select to race between response and timeout
     let completed = tokio::select! {
         _ = async {
-            while let Some(_) = client.receive_messages().next().await {
+            while client.receive_messages().next().await.is_some() {
                 // Keep reading
             }
         } => {
@@ -317,7 +317,7 @@ async fn test_rapid_reconnect_cycles() {
         client
             .connect()
             .await
-            .expect(&format!("Connect {} failed", i));
+            .unwrap_or_else(|_| panic!("Connect {} failed", i));
 
         // Optional: send a quick query
         if i % 2 == 0 {
@@ -327,7 +327,7 @@ async fn test_rapid_reconnect_cycles() {
         client
             .disconnect()
             .await
-            .expect(&format!("Disconnect {} failed", i));
+            .unwrap_or_else(|_| panic!("Disconnect {} failed", i));
 
         // Very brief pause
         tokio::time::sleep(Duration::from_millis(50)).await;

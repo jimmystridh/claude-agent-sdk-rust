@@ -190,10 +190,9 @@ async fn test_synchronized_concurrent_clients() {
         b1.wait().await;
 
         if client.connect().await.is_ok() {
-            if client.query("Say 'sync1'").await.is_ok() {
-                if client.receive_response().await.is_ok() {
-                    c1.fetch_add(1, Ordering::SeqCst);
-                }
+            if client.query("Say 'sync1'").await.is_ok() && client.receive_response().await.is_ok()
+            {
+                c1.fetch_add(1, Ordering::SeqCst);
             }
             client.disconnect().await.ok();
         }
@@ -212,10 +211,9 @@ async fn test_synchronized_concurrent_clients() {
         b2.wait().await;
 
         if client.connect().await.is_ok() {
-            if client.query("Say 'sync2'").await.is_ok() {
-                if client.receive_response().await.is_ok() {
-                    c2.fetch_add(1, Ordering::SeqCst);
-                }
+            if client.query("Say 'sync2'").await.is_ok() && client.receive_response().await.is_ok()
+            {
+                c2.fetch_add(1, Ordering::SeqCst);
             }
             client.disconnect().await.ok();
         }

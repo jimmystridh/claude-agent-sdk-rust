@@ -2,7 +2,7 @@
 name = "claude-agents-sdk"
 version = "0.1.7"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.85"
 authors = ["Jimmy Stridh"]
 description = "Rust SDK for building agents with Claude Code CLI"
 license = "MIT"
@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.49", features = ["full", "process", "sync", "time", "io-util", "macros", "rt-multi-thread"] }
+tokio = { version = "1.52", features = ["full", "process", "sync", "time", "io-util", "macros", "rt-multi-thread"] }
 tokio-stream = { version = "0.1.18", features = ["sync", "io-util"] }
 futures = "0.3"
 async-trait = "0.1"
@@ -26,10 +26,10 @@ serde_json = "1.0"
 thiserror = "2.0"
 
 # Utilities
-uuid = { version = "1.6", features = ["v4"] }
+uuid = { version = "1.20", features = ["v4"] }
 tracing = "0.1"
 semver = "1.0"
-tempfile = "3.9"
+tempfile = "3.27"
 which = "8.0"
 
 # Optional MCP support
@@ -40,8 +40,8 @@ tokio-test = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 pretty_assertions = "1.4"
 mockall = "0.14"
-proptest = "1.4"
-tempfile = "3.9"
+proptest = "1.8"
+tempfile = "3.27"
 
 [features]
 default = []
