@@ -62,11 +62,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         message_types.push(format!("{:?}", std::mem::discriminant(&msg)));
 
         match &msg {
-            Message::System(sys) => {
-                if sys.subtype == "init" {
-                    agents_found = extract_agents(sys);
-                    println!("Init message received. Agents loaded: {:?}", agents_found);
-                }
+            Message::System(sys) if sys.subtype == "init" => {
+                agents_found = extract_agents(sys);
+                println!("Init message received. Agents loaded: {:?}", agents_found);
             }
             Message::Assistant(asst) => {
                 for block in &asst.content {

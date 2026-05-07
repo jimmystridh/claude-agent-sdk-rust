@@ -184,9 +184,8 @@ async fn test_tool_callback_deny_prevents_use() {
         .expect("Failed to query");
 
     while let Some(msg) = client.receive_messages().next().await {
-        match msg.expect("Stream error") {
-            Message::Result(_) => break,
-            _ => {}
+        if let Message::Result(_) = msg.expect("Stream error") {
+            break;
         }
     }
 

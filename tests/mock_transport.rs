@@ -4,8 +4,8 @@
 //! allowing for deterministic unit testing without requiring the actual CLI.
 
 use async_trait::async_trait;
-use claude_agents_sdk::Result;
 use claude_agents_sdk::_internal::transport::Transport;
+use claude_agents_sdk::Result;
 use futures::stream;
 use serde_json::{json, Value};
 use std::pin::Pin;
