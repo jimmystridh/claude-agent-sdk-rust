@@ -30,14 +30,11 @@ async fn tools_array_example() -> Result<(), Box<dyn std::error::Error>> {
 
     while let Some(message) = stream.next().await {
         match message? {
-            Message::System(sys) => {
-                if sys.subtype == "init" {
-                    if let Some(tools) = sys.data.get("tools").and_then(|v| v.as_array()) {
-                        let tool_names: Vec<&str> =
-                            tools.iter().filter_map(|t| t.as_str()).collect();
-                        println!("Tools from system message: {:?}", tool_names);
-                        println!();
-                    }
+            Message::System(sys) if sys.subtype == "init" => {
+                if let Some(tools) = sys.data.get("tools").and_then(|v| v.as_array()) {
+                    let tool_names: Vec<&str> = tools.iter().filter_map(|t| t.as_str()).collect();
+                    println!("Tools from system message: {:?}", tool_names);
+                    println!();
                 }
             }
             Message::Assistant(msg) => {
@@ -78,14 +75,11 @@ async fn tools_empty_array_example() -> Result<(), Box<dyn std::error::Error>> {
 
     while let Some(message) = stream.next().await {
         match message? {
-            Message::System(sys) => {
-                if sys.subtype == "init" {
-                    if let Some(tools) = sys.data.get("tools").and_then(|v| v.as_array()) {
-                        let tool_names: Vec<&str> =
-                            tools.iter().filter_map(|t| t.as_str()).collect();
-                        println!("Tools from system message: {:?}", tool_names);
-                        println!();
-                    }
+            Message::System(sys) if sys.subtype == "init" => {
+                if let Some(tools) = sys.data.get("tools").and_then(|v| v.as_array()) {
+                    let tool_names: Vec<&str> = tools.iter().filter_map(|t| t.as_str()).collect();
+                    println!("Tools from system message: {:?}", tool_names);
+                    println!();
                 }
             }
             Message::Assistant(msg) => {
@@ -129,18 +123,16 @@ async fn tools_preset_example() -> Result<(), Box<dyn std::error::Error>> {
 
     while let Some(message) = stream.next().await {
         match message? {
-            Message::System(sys) => {
-                if sys.subtype == "init" {
-                    if let Some(tools) = sys.data.get("tools").and_then(|v| v.as_array()) {
-                        let tool_names: Vec<&str> =
-                            tools.iter().filter_map(|t| t.as_str()).take(5).collect();
-                        println!(
-                            "Tools from system message ({} tools): {:?}...",
-                            tools.len(),
-                            tool_names
-                        );
-                        println!();
-                    }
+            Message::System(sys) if sys.subtype == "init" => {
+                if let Some(tools) = sys.data.get("tools").and_then(|v| v.as_array()) {
+                    let tool_names: Vec<&str> =
+                        tools.iter().filter_map(|t| t.as_str()).take(5).collect();
+                    println!(
+                        "Tools from system message ({} tools): {:?}...",
+                        tools.len(),
+                        tool_names
+                    );
+                    println!();
                 }
             }
             Message::Assistant(msg) => {
